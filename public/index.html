@@ -68,7 +68,8 @@
       }
       .hero-copy {
         position: relative; z-index: 2; text-align: center; max-width: 780px;
-        background: linear-gradient(180deg, rgba(255,255,255,.65), rgba(255,255,255,.35));
+        background: linear-gradient(180deg, rgba(255,255,255,.88), rgba(255,255,255,.72));
+        border-color: rgba(255,255,255,0.95);
         border: 1px solid var(--glass-stroke); border-radius: 24px; padding: 24px 22px;
         box-shadow: 0 20px 40px rgba(0,0,0,.08);
       }
@@ -76,8 +77,9 @@
       .tag { color: var(--ink-muted); }
 
       section { position: relative; z-index: 2; }
-      .panel {
-        background: linear-gradient(180deg, rgba(255,255,255,.75), rgba(255,255,255,.55));
+      .panel {  
+        background: linear-gradient(180deg, rgba(255,255,255,.88), rgba(255,255,255,.74));
+        border-color: rgba(255,255,255,0.95);
         border: 1px solid var(--glass-stroke); border-radius: 24px;
         padding: 24px;
         margin: 40px 20px;
@@ -100,6 +102,12 @@
       .release img { width: 100%; height: auto; border-radius: 10px; box-shadow: 0 10px 20px rgba(0,0,0,.08); }
       .release .meta { font-size: 12px; color: var(--ink-muted); }
 
+      .artist,
+      .release {
+        background: rgba(255,255,255,.88);
+        border-color: rgba(255,255,255,0.95);
+      }
+
       footer.site { color: var(--ink-muted); text-align: center; padding: 56px 10px 40px; }
       footer.site form { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:12px; }
       footer.site input, footer.site textarea { border-radius:10px; border:1px solid var(--glass-stroke); padding:10px 12px; font: inherit; }
@@ -114,567 +122,783 @@
       .row { display:flex; flex-wrap:wrap; align-items:center; gap: 12px; }
       .spacer { height: 8px; }
       .wrap-tight { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
+      /* === crt mode ========================================================== */
+      :root {
+        --crt-scanline-alpha: 0.14;  /* darker = more obvious scanlines */
+        --crt-mask-alpha:     0.06;  /* RGB phosphor mask strength */
+        --crt-vignette:       0.18;  /* edge darkening */
+        --crt-flicker:        0.03;  /* brightness wobble */
+      }
+
+      body.crt-on #site-wrap {
+        /* slight greenish bloom + contrast bump like a warm CRT */
+        filter: contrast(1.12) saturate(1.5);
+        /* gentle barrel warp via SVG (safe fallback if filter unsupported) */
+        filter: url(#crt-warp) contrast(1.06) saturate(1.08);
+        transform: perspective(1400px) translateZ(0); /* keeps GPU happy */
+      }
+      .crt-overlay {
+        position: fixed; inset: 0;
+        pointer-events: none; z-index: 9998;
+        mix-blend-mode: multiply;   /* lets background show through */
+        animation: crt-flicker 4s ease-in-out infinite;
+        /* stack: scanlines, rgb mask, vignette */
+        background-image:
+          /* scanlines */
+          repeating-linear-gradient(
+            to bottom,
+            rgba(0,0,0,var(--crt-scanline-alpha)) 0 2px,
+            rgba(0,0,0,0) 2px 4px
+          ),
+          /* rgb aperture grille (very subtle) */
+          repeating-linear-gradient(
+            to right,
+            rgba(255,0,0,var(--crt-mask-alpha)) 0 1px,
+            rgba(0,255,0,var(--crt-mask-alpha)) 1px 2px,
+            rgba(0,0,255,var(--crt-mask-alpha)) 2px 3px
+          ),
+          /* vignette */
+          radial-gradient(ellipse at center,
+            rgba(0,0,0,0) 55%,
+            rgba(0,0,0,var(--crt-vignette)) 100%);
+        background-size:
+          100% 8px,          /* scanline spacing */
+          6px 100%,          /* rgb triads */
+          100% 100%;
+        opacity: 1;
+      }
+
+      @keyframes crt-flicker {
+        0%, 100% { opacity: 1; }
+        50%      { opacity: calc(1 - var(--crt-flicker)); }
+      }
+
+      /* tiny rolling refresh line for flavor (optional) */
+      body.crt-on .crt-overlay::after {
+        content: "";
+        position: absolute; left:0; right:0; height: 8vh; top:-10vh;
+        background: linear-gradient(to bottom, rgba(255,255,255,0.08), rgba(255,255,255,0));
+        mix-blend-mode: screen;
+        animation: crt-roll 6s linear infinite;
+      }
+      @keyframes crt-roll {
+        0%   { transform: translateY(0);    }
+        100% { transform: translateY(120vh);}
+      }
+
+      /* toggle button */
+      #crt-toggle{
+        position: fixed; right: 8px; bottom: 8px; z-index: 9999;
+        font: 12px/1 ui-monospace, monospace; padding: 6px 10px;
+        border-radius: 8px; border: 1px solid rgba(0,0,0,.1);
+        background: linear-gradient(180deg, rgba(255,255,255,.8), rgba(255,255,255,.6));
+        cursor: pointer;
+      }
+      #crt-toggle:hover{ filter: contrast(1.1); }
+
+      /* accessibility: respect reduced motion */
+      @media (prefers-reduced-motion: reduce) {
+        .crt-overlay { animation: none; }
+        body.crt-on .crt-overlay::after { display:none; }
+      }
+      /* ===== strong CRT mode (shadow mask + curvature) ===== */
+      :root{
+        --crt-mask-alpha-strong: 0.16; /* shadow mask strength */
+        --crt-scanline-alpha-strong: 0.18;
+        --crt-curvature: 32px;         /* corner radius of tube */
+      }
+
+      /* turn on by adding class .crt-strong to <body> (see JS below) */
+      body.crt-on.crt-strong #site-wrap{
+        filter: url(#crt-warp) contrast(1.08) saturate(1.1);
+      }
+
+      /* replace the “aperture grille” with a shadow mask (dot triads) */
+      body.crt-on.crt-strong .crt-overlay{
+        /* scanlines + vignette are similar, but the RGB is now dots */
+        background-image:
+          /* scanlines (denser/stronger) */
+          repeating-linear-gradient(
+            to bottom,
+            rgba(0,0,0,var(--crt-scanline-alpha-strong)) 0 2px,
+            rgba(0,0,0,0) 2px 4px
+          ),
+          /* shadow mask: RG/B dot triads in a hex-ish packing using 3 layers */
+          radial-gradient(circle at 0.5px 0.5px, rgba(255,0,0,var(--crt-mask-alpha-strong)) 0 0.5px, transparent 0.6px),
+          radial-gradient(circle at 1.5px 1.5px, rgba(0,255,0,var(--crt-mask-alpha-strong)) 0 0.5px, transparent 0.6px),
+          radial-gradient(circle at 2.5px 0.5px, rgba(0,0,255,var(--crt-mask-alpha-strong)) 0 0.5px, transparent 0.6px),
+          /* vignette */
+          radial-gradient(ellipse at center, rgba(0,0,0,0) 55%, rgba(0,0,0,var(--crt-vignette)) 100%);
+
+        background-size:
+          100% 4px,      /* scanlines */
+          3px 3px,       /* R dots */
+          3px 3px,       /* G dots */
+          3px 3px,       /* B dots */
+          100% 100%;     /* vignette */
+
+        background-blend-mode:
+          multiply,
+          normal, normal, normal,
+          multiply;
+      }
+
+      /* bezel + curvature edges: soft black tube with inner lip + glass reflection */
+      .crt-bezel{
+        position: fixed; inset: 0; pointer-events: none; z-index: 9997;
+        /* rounded “tube” window via double inset shadows */
+        border-radius: var(--crt-curvature);
+        box-shadow:
+          inset 0 0 120px rgba(0,0,0,0.55),   /* deep edge darkening */
+          inset 0 0 24px rgba(0,0,0,0.35),    /* inner bezel */
+          0 0 0 2px rgba(0,0,0,0.25);         /* outer frame line */
+        /* faint glass reflection streak across the top-left */
+        background:
+          radial-gradient(120% 80% at 0% 0%,
+            rgba(255,255,255,0.18), rgba(255,255,255,0.0) 60%),
+          radial-gradient(80% 100% at 100% 100%,
+            rgba(255,255,255,0.05), rgba(255,255,255,0.0) 60%);
+        mix-blend-mode: multiply;
+      }
+
+      /* add an inner vignette ring for strong mode */
+      body.crt-on.crt-strong .crt-bezel::after{
+        content:"";
+        position:absolute; inset: 10px;
+        border-radius: calc(var(--crt-curvature) - 10px);
+        box-shadow: inset 0 0 60px rgba(0,0,0,0.35);
+      }
+
+      /* reduce motion friendly */
+      @media (prefers-reduced-motion: reduce){
+        .crt-overlay{ animation: none; }
+      }
     </style>
   </head>
   <body>
+    <svg width="0" height="0" style="position:absolute">
+      <defs>
+        <!-- soft barrel distortion -->
+        <filter id="crt-warp">
+          <!-- a very gentle noise field -->
+          <feTurbulence type="fractalNoise" baseFrequency="0.0015" numOctaves="1" seed="8" result="noise"/>
+          <!-- keep the warp stable but a little alive -->
+          <feDisplacementMap in="SourceGraphic" in2="noise" scale="12" xChannelSelector="R" yChannelSelector="G"/>
+        </filter>
+      </defs>
+    </svg>
+    <div id="site-wrap">
 
-    <div class="under-construction">this website is under construction — please mind the cones</div>
+      <div class="crt-overlay" aria-hidden="true"></div>
+      <div class="crt-bezel" aria-hidden="true"></div>
 
-    <header class="site">
-      <div class="wrap row" style="justify-content: space-between;">
-        <div class="brand"><span class="dot"></span> <span>aery records</span></div>
-        <nav>
-          <a href="#releases">releases</a>
-          <a href="#lineup">lineup</a>
-          <a href="#news">news</a>
-          <a href="#about">about</a>
-        </nav>
-      </div>
-    </header>
+      <!-- optional: a tiny toggle -->
+      <button id="crt-toggle" type="button" title="toggle crt">crt</button>
 
-    <section class="hero">
-      <canvas id="stage" aria-hidden="true"></canvas>
-      <div class="hero-copy">
-        <h1>aery records</h1>
-        <div class="tag">a microlabel for us</div>
-        <div class="spacer"></div>
-        <a class="pill" href="#releases">jump to releases</a>
-      </div>
-    </section>
+      <div class="under-construction">this website is under construction — please mind the cones</div>
 
-    <section id="lineup" class="panel wrap-tight">
-      <div class="kicker">lineup</div>
-      <h2>artists</h2>
-      <div class="lineup">
-        <div class="artist">
-          <div class="name">nixie halcyon</div>
-          <iframe class="embed" title="nixie halcyon" loading="lazy"
-            src="https://bandcamp.com/EmbeddedPlayer/album=3699429914/size=large/bgcol=ffffff/linkcol=0687f5/transparent=true/"></iframe>
-          <div class="note">bandcamp: <a href="https://nixiehalcyon.bandcamp.com" target="_blank" rel="noopener">nixiehalcyon.bandcamp.com</a></div>
+      <header class="site">
+        <div class="wrap row" style="justify-content: space-between;">
+          <div class="brand"><span class="dot"></span> <span>aery records</span></div>
+          <nav>
+            <a href="#releases">releases</a>
+            <a href="#lineup">lineup</a>
+            <a href="#news">news</a>
+            <a href="#about">about</a>
+          </nav>
         </div>
-        <div class="artist">
-          <div class="name">파티 가슴 (420)ＰＡＲＴＹＢＯＯＢ</div>
-          <iframe class="embed" title="파티 가슴 (420)ＰＡＲＴＹＢＯＯＢ" loading="lazy"
-            src="https://bandcamp.com/EmbeddedPlayer/album=1972312126/size=large/bgcol=ffffff/linkcol=0687f5/transparent=true/"></iframe>
-          <div class="note">bandcamp: <a href="https://partyboob420.bandcamp.com" target="_blank" rel="noopener">partyboob420.bandcamp.com</a></div>
+      </header>
+
+      <section class="hero">
+        <canvas id="stage" aria-hidden="true"></canvas>
+        <div class="hero-copy">
+          <h1>aery records</h1>
+          <div class="tag">a microlabel for us</div>
+          <div class="spacer"></div>
+          <a class="pill" href="#releases">jump to releases</a>
         </div>
-        <div class="artist">
-          <div class=name>yoshi das</div>
-          <iframe class="embed" title="yoshi das" loading="lazy"
-            src=""></iframe>
-          <div class="note">bandcamp: <a href="https://yoshidas.bandcamp.com" target="_blank" rel="noopener">yoshidas.bandcamp.com</a></div>
+      </section>
+
+      <section id="lineup" class="panel wrap-tight">
+        <div class="kicker">lineup</div>
+        <h2>artists</h2>
+        <div class="lineup">
+          <div class="artist">
+            <div class="name">nixie halcyon</div>
+            <iframe class="embed" title="nixie halcyon" loading="lazy"
+              src="https://bandcamp.com/EmbeddedPlayer/album=3699429914/size=large/bgcol=ffffff/linkcol=0687f5/transparent=true/"></iframe>
+            <div class="note">bandcamp: <a href="https://nixiehalcyon.bandcamp.com" target="_blank" rel="noopener">nixiehalcyon.bandcamp.com</a></div>
+          </div>
+          <div class="artist">
+            <div class="name">파티 가슴 (420)ＰＡＲＴＹＢＯＯＢ</div>
+            <iframe class="embed" title="파티 가슴 (420)ＰＡＲＴＹＢＯＯＢ" loading="lazy"
+              src="https://bandcamp.com/EmbeddedPlayer/album=1972312126/size=large/bgcol=ffffff/linkcol=0687f5/transparent=true/"></iframe>
+            <div class="note">bandcamp: <a href="https://partyboob420.bandcamp.com" target="_blank" rel="noopener">partyboob420.bandcamp.com</a></div>
+          </div>
+          <div class="artist">
+            <div class=name>yoshi das</div>
+            <iframe class="embed" title="yoshi das" loading="lazy"
+              src=""></iframe>
+            <div class="note">bandcamp: <a href="https://yoshidas.bandcamp.com" target="_blank" rel="noopener">yoshidas.bandcamp.com</a></div>
+          </div>
+          <div class="artist">
+            <div class=name>iridium</div>
+            <iframe class="embed" title="iridium" loading="lazy"
+              src=""></iframe>
+            <div class="note">bandcamp: <a href="https://iridium.bandcamp.com" target="_blank" rel="noopener">iridium.bandcamp.com</a></div>
+          </div>
+          <div class="artist">
+            <div class=name>bimsy clustercamp</div>
+            <iframe class="embed" title="bimsy clustercamp" loading="lazy"
+              src=""></iframe>
+            <div class="note">bandcamp: <a href="https://bimsyclustercamp.bandcamp.com" target="_blank" rel="noopener">bimsyclustercamp.bandcamp.com</a></div>
+          </div>
+          <div class="artist">
+            <div class=name>morgan fiskevold</div>
+            <iframe class="embed" title="morgan fiskevold" loading="lazy"
+              src=""></iframe>
+            <div class="note">bandcamp: <a href="https://morganfiskevold.bandcamp.com" target="_blank" rel="noopener">morganfiskevold.bandcamp.com</a></div>
+          </div>
         </div>
-        <div class="artist">
-          <div class=name>iridium</div>
-          <iframe class="embed" title="iridium" loading="lazy"
-            src=""></iframe>
-          <div class="note">bandcamp: <a href="https://iridium.bandcamp.com" target="_blank" rel="noopener">iridium.bandcamp.com</a></div>
+      </section>
+
+      <section id="releases" class="panel wrap-tight">
+        <div class="kicker">releases</div>
+        <h2>out now / forthcoming</h2>
+        <div class="releases">
+          <div class="release">
+            <img src="https://picsum.photos/seed/aery1/640/640" alt="release art" />
+            <div><b>nyxie — aurora drive</b></div>
+            <div class="meta">aery-001 · cassette / digital</div>
+            <iframe class="embed" src="https://bandcamp.com/EmbeddedPlayer/album=0000000000/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=false/transparent=true/" title="bandcamp embed — aery-001" loading="lazy"></iframe>
+          </div>
+          <div class="release">
+            <img src="https://picsum.photos/seed/aery2/640/640" alt="release art" />
+            <div><b>various — neon tide</b></div>
+            <div class="meta">aery-002 · compilation</div>
+            <iframe class="embed" src="https://bandcamp.com/EmbeddedPlayer/album=0000000000/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=false/transparent=true/" title="bandcamp embed — aery-002" loading="lazy"></iframe>
+          </div>
+          <div class="release">
+            <img src="https://picsum.photos/seed/aery3/640/640" alt="release art" />
+            <div><b>luna waves — skyline</b></div>
+            <div class="meta">aery-003 · single</div>
+            <iframe class="embed" src="https://bandcamp.com/EmbeddedPlayer/album=0000000000/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=false/transparent=true/" title="bandcamp embed — aery-003" loading="lazy"></iframe>
+          </div>
         </div>
-        <div class="artist">
-          <div class=name>bimsy clustercamp</div>
-          <iframe class="embed" title="bimsy clustercamp" loading="lazy"
-            src=""></iframe>
-          <div class="note">bandcamp: <a href="https://bimsyclustercamp.bandcamp.com" target="_blank" rel="noopener">bimsyclustercamp.bandcamp.com</a></div>
-        </div>
-        <div class="artist">
-          <div class=name>morgan fiskevold</div>
-          <iframe class="embed" title="morgan fiskevold" loading="lazy"
-            src=""></iframe>
-          <div class="note">bandcamp: <a href="https://morganfiskevold.bandcamp.com" target="_blank" rel="noopener">morganfiskevold.bandcamp.com</a></div>
-        </div>
-      </div>
-    </section>
+      </section>
 
-    <section id="releases" class="panel wrap-tight">
-      <div class="kicker">releases</div>
-      <h2>out now / forthcoming</h2>
-      <div class="releases">
-        <div class="release">
-          <img src="https://picsum.photos/seed/aery1/640/640" alt="release art" />
-          <div><b>nyxie — aurora drive</b></div>
-          <div class="meta">aery-001 · cassette / digital</div>
-          <iframe class="embed" src="https://bandcamp.com/EmbeddedPlayer/album=0000000000/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=false/transparent=true/" title="bandcamp embed — aery-001" loading="lazy"></iframe>
-        </div>
-        <div class="release">
-          <img src="https://picsum.photos/seed/aery2/640/640" alt="release art" />
-          <div><b>various — neon tide</b></div>
-          <div class="meta">aery-002 · compilation</div>
-          <iframe class="embed" src="https://bandcamp.com/EmbeddedPlayer/album=0000000000/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=false/transparent=true/" title="bandcamp embed — aery-002" loading="lazy"></iframe>
-        </div>
-        <div class="release">
-          <img src="https://picsum.photos/seed/aery3/640/640" alt="release art" />
-          <div><b>luna waves — skyline</b></div>
-          <div class="meta">aery-003 · single</div>
-          <iframe class="embed" src="https://bandcamp.com/EmbeddedPlayer/album=0000000000/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=false/transparent=true/" title="bandcamp embed — aery-003" loading="lazy"></iframe>
-        </div>
-      </div>
-    </section>
+      <section id="about" class="panel wrap-tight">
+        <div class="kicker">about</div>
+        <h2>aery records</h2>
+        <p>born in the pacific northwest. driven by community, experimentation, and vibes. we make space for underrepresented independent artists to release music and keep their rights.</p>
+      </section>
 
-    <section id="about" class="panel wrap-tight">
-      <div class="kicker">about</div>
-      <h2>aery records</h2>
-      <p>born in the pacific northwest. driven by community, experimentation, and vibes. we make space for underrepresented independent artists to release music and keep their rights.</p>
-    </section>
+      <section id="news" class="panel wrap-tight">
+        <div class="kicker">news</div>
+        <h2>blog</h2>
+        <article class="post">
+          <div class="meta">2025-09-06 · aery-records</div>
+          <h3>hello neocities</h3>
+          <p>site is live, webgl spins, pastel skies for days. drop us your bandcamp links if you want to join the coop.</p>
+        </article>
+        <article class="post">
+          <div class="meta">2025-09-06 · releases</div>
+          <h3>aery-001 coming soon</h3>
+          <p>teasing our first physical: a short-run cassette with vapor-soaked synths. more soon.</p>
+        </article>
+      </section>
 
-    <section id="news" class="panel wrap-tight">
-      <div class="kicker">news</div>
-      <h2>blog</h2>
-      <article class="post">
-        <div class="meta">2025-09-06 · aery-records</div>
-        <h3>hello neocities</h3>
-        <p>site is live, webgl spins, pastel skies for days. drop us your bandcamp links if you want to join the coop.</p>
-      </article>
-      <article class="post">
-        <div class="meta">2025-09-06 · releases</div>
-        <h3>aery-001 coming soon</h3>
-        <p>teasing our first physical: a short-run cassette with vapor-soaked synths. more soon.</p>
-      </article>
-    </section>
+      <footer class="site">
+        <div>© <span id="year"></span> aery records — all love.</div>
+        <form data-mailto>
+          <input name="name" type="text" placeholder="your name" required />
+          <input name="email" type="email" placeholder="your email" required />
+          <input name="message" type="text" placeholder="say hi / booking / demos" required style="min-width:260px;" />
+          <button type="submit">send</button>
+        </form>
+        <div style="margin-top:6px;font-size:12px;color:var(--ink-muted)">static mailto form — swap to formspree/netlify when ready</div>
+      </footer>
 
-    <footer class="site">
-      <div>© <span id="year"></span> aery records — all love.</div>
-      <form data-mailto>
-        <input name="name" type="text" placeholder="your name" required />
-        <input name="email" type="email" placeholder="your email" required />
-        <input name="message" type="text" placeholder="say hi / booking / demos" required style="min-width:260px;" />
-        <button type="submit">send</button>
-      </form>
-      <div style="margin-top:6px;font-size:12px;color:var(--ink-muted)">static mailto form — swap to formspree/netlify when ready</div>
-    </footer>
+      <!-- three.js -->
+      <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/geometries/TeapotGeometry.js"></script>
 
-    <!-- three.js -->
-    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/geometries/TeapotGeometry.js"></script>
-
-    <!-- tiny inline orbit replacement -->
-    <script>
-      class MiniOrbit {
-        constructor(camera, dom, {
-          target = new THREE.Vector3(0,0,0),
-          distance = 10, minDistance = 3, maxDistance = 50,
-          autorotate = true, autorotateSpeed = 0.2
-        } = {}) {
-          this.camera = camera; this.dom = dom;
-          this.target = target.clone();
-          this.distance = distance; this.minDistance = minDistance; this.maxDistance = maxDistance;
-          this.autorotate = autorotate; this.autorotateSpeed = autorotateSpeed;
-          this.theta = Math.atan2(camera.position.x - target.x, camera.position.z - target.z);
-          const dy = camera.position.y - target.y, dxz = Math.max(1e-6, Math.hypot(camera.position.x - target.x, camera.position.z - target.z));
-          this.phi = Math.atan2(dy, dxz);
-          this.dragging=false; this.lastX=0; this.lastY=0; this.rotateSpeed=0.005; this.zoomSpeed=0.002;
-          this.minPhi=-Math.PI/2+0.05; this.maxPhi=Math.PI/2-0.05;
-          dom.addEventListener('mousedown',e=>{this.dragging=true;this.lastX=e.clientX;this.lastY=e.clientY;});
-          dom.addEventListener('touchstart',e=>{if(e.touches.length===1){this.dragging=true;this.lastX=e.touches[0].clientX;this.lastY=e.touches[0].clientY;}},{passive:false});
-          window.addEventListener('mousemove',e=>{if(!this.dragging)return;const dx=e.clientX-this.lastX,dy=e.clientY-this.lastY;this.lastX=e.clientX;this.lastY=e.clientY;this.theta-=dx*this.rotateSpeed;this.phi-=dy*this.rotateSpeed;this.phi=Math.max(this.minPhi,Math.min(this.maxPhi,this.phi));});
-          window.addEventListener('touchmove',e=>{if(!this.dragging||e.touches.length!==1)return;const t=e.touches[0],dx=t.clientX-this.lastX,dy=t.clientY-this.lastY;this.lastX=t.clientX;this.lastY=t.clientY;this.theta-=dx*this.rotateSpeed;this.phi-=dy*this.rotateSpeed;this.phi=Math.max(this.minPhi,Math.min(this.maxPhi,this.phi));e.preventDefault();},{passive:false});
-          window.addEventListener('mouseup',()=>{this.dragging=false;});
-          window.addEventListener('touchend',()=>{this.dragging=false;});
-          dom.addEventListener('wheel',e=>{const s=Math.exp(e.deltaY*this.zoomSpeed);this.distance=Math.max(this.minDistance,Math.min(this.maxDistance,this.distance*s));e.preventDefault();},{passive:false});
-        }
-        update(dt){
-          if(this.autorotate && !this.dragging) this.theta += this.autorotateSpeed*dt;
-          const r=this.distance, cp=Math.cos(this.phi), sp=Math.sin(this.phi);
-          const x=this.target.x + r*Math.sin(this.theta)*cp;
-          const z=this.target.z + r*Math.cos(this.theta)*cp;
-          const y=this.target.y + r*sp;
-          this.camera.position.set(x,y,z); this.camera.lookAt(this.target);
-        }
-      }
-    </script>
-
-    <!-- randomize lineup -->
-    <script>
-      // randomize artist cards each load (Fisher–Yates, crypto-strong)
-      (function () {
-        const container = document.querySelector('#lineup .lineup');
-        if (!container) return;
-        const cards = Array.from(container.children);
-
-        // allow "pinned" artists to stay put (optional: add data-pin to a .artist)
-        const pinned = cards.filter(el => el.hasAttribute('data-pin'));
-        const pool   = cards.filter(el => !el.hasAttribute('data-pin'));
-
-        // shuffle pool
-        for (let i = pool.length - 1; i > 0; i--) {
-          const r = new Uint32Array(1); crypto.getRandomValues(r);
-          const j = Math.floor((r[0] / 2**32) * (i + 1));
-          [pool[i], pool[j]] = [pool[j], pool[i]];
-        }
-
-        // rebuild: pinned keep their original relative order at the top
-        container.innerHTML = '';
-        pinned.forEach(el => container.appendChild(el));
-        pool.forEach(el => container.appendChild(el));
-      })();
-    </script>
-    <!-- init -->
-    <script>
-      if (!window.THREE) {
-        const probe = document.createElement('div');
-        probe.style.cssText='position:fixed;left:0;right:0;top:0;background:#ff3b3b;color:#fff;padding:8px 12px;font:12px/1.2 ui-monospace;z-index:99999';
-        probe.textContent='probe: window.THREE is undefined — check the three.min.js script tag.';
-        document.addEventListener('DOMContentLoaded', () => document.body.appendChild(probe));
-      }
-
-      window.addEventListener('load', () => {
-        const dbg = document.createElement('div');
-        dbg.id = 'debug';
-        Object.assign(dbg.style, {
-          position:'fixed', right:'8px', bottom:'8px', padding:'6px 10px',
-          background:'rgba(0,0,0,0.55)', color:'#fff',
-          font:'12px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace',
-          borderRadius:'8px', zIndex: 9999
-        });
-        dbg.textContent = 'booting…';
-        document.body.appendChild(dbg);
-
-        try {
-          if (!window.THREE) { dbg.textContent = 'error: three.js failed to load'; return; }
-
-          const canvas = document.getElementById('stage');
-          if (!canvas) { dbg.textContent = 'error: canvas #stage not found'; return; }
-
-          const DPR = Math.min(window.devicePixelRatio || 1, 2);
-          const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-          renderer.setPixelRatio(DPR);
-
-          const scene  = new THREE.Scene();
-          scene.fog = new THREE.FogExp2(new THREE.Color('#d7c7ff'), 0.002);
-
-          const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 20000);
-          camera.position.set(0, 2.2, 12);
-
-          const controls = new MiniOrbit(camera, renderer.domElement, {
-            target: new THREE.Vector3(0, 0, 0),
-            distance: 10, minDistance: 4, maxDistance: 200,
-            autorotate: true, autorotateSpeed: 0.25
-          });
-
-          // lights
-          const hemi = new THREE.HemisphereLight(0xffffff, 0xaba8ff, 1.1);
-          const dir  = new THREE.DirectionalLight(0xffffff, 0.6); dir.position.set(5, 8, 5);
-          scene.add(hemi, dir);
-
-          /* ====== infinite cyan→magenta grid (shader) ====== */
-          const gridCellSize = 0.70;
-          const gridLineWidth = 0.006;
-
-          const gridVert = `
-            varying vec3 vWorld;
-            void main() {
-              vec4 world = modelMatrix * vec4(position, 1.0);
-              vWorld = world.xyz;
-              gl_Position = projectionMatrix * viewMatrix * world;
-            }
-          `;
-          const gridFrag = `
-            precision highp float;
-            varying vec3 vWorld;
-            uniform float cell;
-            uniform float line;
-            uniform vec3 colorA;
-            uniform vec3 colorB;
-            uniform float fogNear;
-            uniform float fogFar;
-
-            float gridMask(float coord, float cell, float line) {
-              float g = abs(fract(coord / cell) - 0.5) * cell;
-              float w = fwidth(g) + line;
-              return 1.0 - smoothstep(line, line + w, g);
-            }
-
-            void main() {
-              float maskX = gridMask(vWorld.x, cell, line);
-              float maskZ = gridMask(vWorld.z, cell, line);
-              float mask = max(maskX, maskZ);
-
-              float zMix = clamp((vWorld.z + 50.0) / 100.0, 0.0, 1.0);
-              vec3 grad = mix(colorA, colorB, zMix);
-
-              float d = length(vWorld.xz);
-              float fog = smoothstep(fogNear, fogFar, d);
-
-              vec3 rgb = grad * mask;
-              float alpha = mask * (1.0 - fog);
-
-              if (alpha < 0.01) discard;
-              gl_FragColor = vec4(rgb, alpha);
-            }
-          `;
-          const gridMat = new THREE.ShaderMaterial({
-            vertexShader: gridVert,
-            fragmentShader: gridFrag,
-            transparent: true,
-            depthWrite: false,
-            extensions: { derivatives: true },
-            uniforms: {
-              cell:   { value: gridCellSize },
-              line:   { value: gridLineWidth },
-              colorA: { value: new THREE.Color('#7af0ff') },
-              colorB: { value: new THREE.Color('#ff7ad6') },
-              fogNear:{ value: 80.0 },
-              fogFar: { value: 800.0 }
-            }
-          });
-          const gridGeo = new THREE.PlaneGeometry(100000, 100000, 1, 1);
-          const gridMesh = new THREE.Mesh(gridGeo, gridMat);
-          gridMesh.rotation.x = -Math.PI * 0.5;
-          gridMesh.position.y = -1.5;
-          scene.add(gridMesh);
-
-          /* ====== parallax starfield (brighter + fog-immune) ====== */
-          const starCount = 3500;
-          const starsGeo = new THREE.BufferGeometry();
-          const pos = new Float32Array(starCount * 3);
-          const col = new Float32Array(starCount * 3);
-          for (let i = 0; i < starCount; i++) {
-            const x = (Math.random() - 0.5) * 8000;
-            const z = (Math.random() - 0.2) * 14000;
-            const y = 60 + Math.random() * 1600;
-            pos[i*3+0] = x; pos[i*3+1] = y; pos[i*3+2] = z;
-            const t = Math.random();
-            const c = new THREE.Color().setRGB(0.48 + 0.52 * t, 0.95 - 0.35 * t, 1.00 - 0.05 * t);
-            col[i*3+0] = c.r; col[i*3+1] = c.g; col[i*3+2] = c.b;
+      <!-- tiny inline orbit replacement -->
+      <script>
+        class MiniOrbit {
+          constructor(camera, dom, {
+            target = new THREE.Vector3(0,0,0),
+            distance = 10, minDistance = 3, maxDistance = 50,
+            autorotate = true, autorotateSpeed = 0.2
+          } = {}) {
+            this.camera = camera; this.dom = dom;
+            this.target = target.clone();
+            this.distance = distance; this.minDistance = minDistance; this.maxDistance = maxDistance;
+            this.autorotate = autorotate; this.autorotateSpeed = autorotateSpeed;
+            this.theta = Math.atan2(camera.position.x - target.x, camera.position.z - target.z);
+            const dy = camera.position.y - target.y, dxz = Math.max(1e-6, Math.hypot(camera.position.x - target.x, camera.position.z - target.z));
+            this.phi = Math.atan2(dy, dxz);
+            this.dragging=false; this.lastX=0; this.lastY=0; this.rotateSpeed=0.005; this.zoomSpeed=0.002;
+            this.minPhi=-Math.PI/2+0.05; this.maxPhi=Math.PI/2-0.05;
+            dom.addEventListener('mousedown',e=>{this.dragging=true;this.lastX=e.clientX;this.lastY=e.clientY;});
+            dom.addEventListener('touchstart',e=>{if(e.touches.length===1){this.dragging=true;this.lastX=e.touches[0].clientX;this.lastY=e.touches[0].clientY;}},{passive:false});
+            window.addEventListener('mousemove',e=>{if(!this.dragging)return;const dx=e.clientX-this.lastX,dy=e.clientY-this.lastY;this.lastX=e.clientX;this.lastY=e.clientY;this.theta-=dx*this.rotateSpeed;this.phi-=dy*this.rotateSpeed;this.phi=Math.max(this.minPhi,Math.min(this.maxPhi,this.phi));});
+            window.addEventListener('touchmove',e=>{if(!this.dragging||e.touches.length!==1)return;const t=e.touches[0],dx=t.clientX-this.lastX,dy=t.clientY-this.lastY;this.lastX=t.clientX;this.lastY=t.clientY;this.theta-=dx*this.rotateSpeed;this.phi-=dy*this.rotateSpeed;this.phi=Math.max(this.minPhi,Math.min(this.maxPhi,this.phi));e.preventDefault();},{passive:false});
+            window.addEventListener('mouseup',()=>{this.dragging=false;});
+            window.addEventListener('touchend',()=>{this.dragging=false;});
+            dom.addEventListener('wheel',e=>{const s=Math.exp(e.deltaY*this.zoomSpeed);this.distance=Math.max(this.minDistance,Math.min(this.maxDistance,this.distance*s));e.preventDefault();},{passive:false});
           }
-          starsGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-          starsGeo.setAttribute('color',    new THREE.BufferAttribute(col, 3));
-          const starsMat = new THREE.PointsMaterial({
-            size: 1.8, sizeAttenuation: true, vertexColors: true,
-            transparent: true, opacity: 0.9, depthWrite: false, fog: false
+          update(dt){
+            if(this.autorotate && !this.dragging) this.theta += this.autorotateSpeed*dt;
+            const r=this.distance, cp=Math.cos(this.phi), sp=Math.sin(this.phi);
+            const x=this.target.x + r*Math.sin(this.theta)*cp;
+            const z=this.target.z + r*Math.cos(this.theta)*cp;
+            const y=this.target.y + r*sp;
+            this.camera.position.set(x,y,z); this.camera.lookAt(this.target);
+          }
+        }
+      </script>
+
+      <!-- randomize lineup -->
+      <script>
+        // randomize artist cards each load (Fisher–Yates, crypto-strong)
+        (function () {
+          const container = document.querySelector('#lineup .lineup');
+          if (!container) return;
+          const cards = Array.from(container.children);
+
+          // allow "pinned" artists to stay put (optional: add data-pin to a .artist)
+          const pinned = cards.filter(el => el.hasAttribute('data-pin'));
+          const pool   = cards.filter(el => !el.hasAttribute('data-pin'));
+
+          // shuffle pool
+          for (let i = pool.length - 1; i > 0; i--) {
+            const r = new Uint32Array(1); crypto.getRandomValues(r);
+            const j = Math.floor((r[0] / 2**32) * (i + 1));
+            [pool[i], pool[j]] = [pool[j], pool[i]];
+          }
+
+          // rebuild: pinned keep their original relative order at the top
+          container.innerHTML = '';
+          pinned.forEach(el => container.appendChild(el));
+          pool.forEach(el => container.appendChild(el));
+        })();
+      </script>
+      <script>
+        (function(){
+          // if you already have the basic CRT toggle, this just adds a "strong" toggle via Shift+Click
+          const btn = document.getElementById('crt-toggle');
+          if (!btn) return;
+
+          const keyStrong = 'aery-crt-strong';
+          if (localStorage.getItem(keyStrong) === 'on') document.body.classList.add('crt-strong');
+
+          btn.addEventListener('click', (e)=>{
+            // normal click still toggles basic CRT (your existing code)
+            if (e.shiftKey){
+              document.body.classList.toggle('crt-strong');
+              localStorage.setItem(keyStrong, document.body.classList.contains('crt-strong') ? 'on' : 'off');
+              e.stopPropagation();
+            }
           });
-          const stars = new THREE.Points(starsGeo, starsMat);
-          stars.renderOrder = -1;
-          scene.add(stars);
 
-          /* ====== primitives + pastel Fresnel glow ====== */
-          const mats = [
-            new THREE.MeshStandardMaterial({ color: '#ff9ad6', roughness: 0.3, metalness: 0.1 }),
-            new THREE.MeshStandardMaterial({ color: '#a0f1e6', roughness: 0.25, metalness: 0.1 }),
-            new THREE.MeshStandardMaterial({ color: '#ffe08a', roughness: 0.35, metalness: 0.05 }),
-            new THREE.MeshStandardMaterial({ color: '#b4b9ff', roughness: 0.25, metalness: 0.1 }),
-          ];
-          const objs = [];
-          const glows = [];
-          let slots = null;
+          // optional: show state in label
+          const update = ()=>{
+            const base = document.body.classList.contains('crt-on') ? 'crt ✓' : 'crt';
+            btn.textContent = document.body.classList.contains('crt-strong') ? base + ' •' : base;
+          };
+          update();
+          new MutationObserver(update).observe(document.body, { attributes:true, attributeFilter:['class'] });
+        })();
+      </script>
+      <script>
+        (function(){
+          const key = 'aery-crt';
+          const saved = localStorage.getItem(key);
+          if (saved === 'on') document.body.classList.add('crt-on');
 
-          const geoCube   = new THREE.BoxGeometry(1.1, 1.1, 1.1);
-          const geoSphere = new THREE.SphereGeometry(0.8, 48, 32);
-          const geoCone   = new THREE.ConeGeometry(0.8, 1.4, 4);
-          const geoCyl    = new THREE.CylinderGeometry(0.7, 0.7, 1.3, 32);
-          const geoTorus  = new THREE.TorusGeometry(0.8, 0.25, 24, 64);
-          let teapotGeo = null;
-          try { teapotGeo = new THREE.TeapotGeometry(0.6, 10); } catch (e) { console.warn('teapot unavailable', e); }
-          const baseGeos = [geoCube, geoSphere, geoCone, geoCyl, geoTorus];
-          if (teapotGeo) baseGeos.push(teapotGeo);
-          
-          // compute per-geometry radii (for safe spacing)
-          baseGeos.forEach(g => g.computeBoundingSphere && g.computeBoundingSphere());
-          const radii = baseGeos.map(g => (g.boundingSphere ? g.boundingSphere.radius : 1.0));
+          const btn = document.getElementById('crt-toggle');
+          if (btn){
+            btn.addEventListener('click', ()=>{
+              document.body.classList.toggle('crt-on');
+              localStorage.setItem(key, document.body.classList.contains('crt-on') ? 'on' : 'off');
+            });
+            // label state
+            const setLabel = ()=> btn.textContent = document.body.classList.contains('crt-on') ? 'crt ✓' : 'crt';
+            setLabel();
+            new MutationObserver(setLabel).observe(document.body, { attributes:true, attributeFilter:['class'] });
+          }
+        })();
+      </script>
+      <!-- init -->
+      <script>
+        if (!window.THREE) {
+          const probe = document.createElement('div');
+          probe.style.cssText='position:fixed;left:0;right:0;top:0;background:#ff3b3b;color:#fff;padding:8px 12px;font:12px/1.2 ui-monospace;z-index:99999';
+          probe.textContent='probe: window.THREE is undefined — check the three.min.js script tag.';
+          document.addEventListener('DOMContentLoaded', () => document.body.appendChild(probe));
+        }
 
-          function makeGlowMesh(geometry, hexColor = '#ffffff', scale = 1.14, intensity = 1.0) {
-            const glowMat = new THREE.ShaderMaterial({
-              uniforms: { glowColor: { value: new THREE.Color(hexColor) }, intensity: { value: intensity } },
-              vertexShader: `
-                uniform float intensity;
-                varying float vFresnel;
-                void main() {
-                  vec3 scaled = position * ${1.14};
-                  vec4 worldPos = modelMatrix * vec4(scaled, 1.0);
-                  vec3 worldNormal = normalize(mat3(modelMatrix) * normal);
-                  vec3 viewDir = normalize(cameraPosition - worldPos.xyz);
-                  vFresnel = pow(1.0 - max(dot(worldNormal, viewDir), 0.0), 2.0);
-                  gl_Position = projectionMatrix * viewMatrix * worldPos;
-                }
-              `,
-              fragmentShader: `
-                uniform vec3 glowColor;
-                uniform float intensity;
-                varying float vFresnel;
-                void main() {
-                  float glow = vFresnel * 0.8 * intensity;
-                  gl_FragColor = vec4(glowColor, glow);
-                }
-              `,
-              blending: THREE.AdditiveBlending,
+        window.addEventListener('load', () => {
+          const dbg = document.createElement('div');
+          dbg.id = 'debug';
+          Object.assign(dbg.style, {
+            position:'fixed', right:'8px', bottom:'8px', padding:'6px 10px',
+            background:'rgba(0,0,0,0.55)', color:'#fff',
+            font:'12px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace',
+            borderRadius:'8px', zIndex: 9999
+          });
+          dbg.textContent = 'booting…';
+          document.body.appendChild(dbg);
+
+          try {
+            if (!window.THREE) { dbg.textContent = 'error: three.js failed to load'; return; }
+
+            const canvas = document.getElementById('stage');
+            if (!canvas) { dbg.textContent = 'error: canvas #stage not found'; return; }
+
+            const DPR = Math.min(window.devicePixelRatio || 1, 2);
+            const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+            renderer.setPixelRatio(DPR);
+
+            const scene  = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(new THREE.Color('#d7c7ff'), 0.002);
+
+            const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 20000);
+            camera.position.set(0, 2.2, 12);
+
+            const controls = new MiniOrbit(camera, renderer.domElement, {
+              target: new THREE.Vector3(0, 0, 0),
+              distance: 10, minDistance: 4, maxDistance: 200,
+              autorotate: true, autorotateSpeed: 0.25
+            });
+
+            // lights
+            const hemi = new THREE.HemisphereLight(0xffffff, 0xaba8ff, 1.1);
+            const dir  = new THREE.DirectionalLight(0xffffff, 0.6); dir.position.set(5, 8, 5);
+            scene.add(hemi, dir);
+
+            /* ====== infinite cyan→magenta grid (shader) ====== */
+            const gridCellSize = 0.70;
+            const gridLineWidth = 0.006;
+
+            const gridVert = `
+              varying vec3 vWorld;
+              void main() {
+                vec4 world = modelMatrix * vec4(position, 1.0);
+                vWorld = world.xyz;
+                gl_Position = projectionMatrix * viewMatrix * world;
+              }
+            `;
+            const gridFrag = `
+              precision highp float;
+              varying vec3 vWorld;
+              uniform float cell;
+              uniform float line;
+              uniform vec3 colorA;
+              uniform vec3 colorB;
+              uniform float fogNear;
+              uniform float fogFar;
+
+              float gridMask(float coord, float cell, float line) {
+                float g = abs(fract(coord / cell) - 0.5) * cell;
+                float w = fwidth(g) + line;
+                return 1.0 - smoothstep(line, line + w, g);
+              }
+
+              void main() {
+                float maskX = gridMask(vWorld.x, cell, line);
+                float maskZ = gridMask(vWorld.z, cell, line);
+                float mask = max(maskX, maskZ);
+
+                float zMix = clamp((vWorld.z + 50.0) / 100.0, 0.0, 1.0);
+                vec3 grad = mix(colorA, colorB, zMix);
+
+                float d = length(vWorld.xz);
+                float fog = smoothstep(fogNear, fogFar, d);
+
+                vec3 rgb = grad * mask;
+                float alpha = mask * (1.0 - fog);
+
+                if (alpha < 0.01) discard;
+                gl_FragColor = vec4(rgb, alpha);
+              }
+            `;
+            const gridMat = new THREE.ShaderMaterial({
+              vertexShader: gridVert,
+              fragmentShader: gridFrag,
               transparent: true,
               depthWrite: false,
-              side: THREE.BackSide
+              extensions: { derivatives: true },
+              uniforms: {
+                cell:   { value: gridCellSize },
+                line:   { value: gridLineWidth },
+                colorA: { value: new THREE.Color('#7af0ff') },
+                colorB: { value: new THREE.Color('#ff7ad6') },
+                fogNear:{ value: 80.0 },
+                fogFar: { value: 800.0 }
+              }
             });
-            return new THREE.Mesh(geometry, glowMat);
-          }
+            const gridGeo = new THREE.PlaneGeometry(100000, 100000, 1, 1);
+            const gridMesh = new THREE.Mesh(gridGeo, gridMat);
+            gridMesh.rotation.x = -Math.PI * 0.5;
+            gridMesh.position.y = -1.5;
+            scene.add(gridMesh);
 
-          // helper: visible size at the target (origin) from camera fov
-          function visibleSize() {
-            const dist = camera.position.distanceTo(new THREE.Vector3(0,0,0));
-            const vHeight = 2 * dist * Math.tan(THREE.MathUtils.degToRad(camera.fov * 0.5));
-            const vWidth  = vHeight * camera.aspect;
-            return { vWidth, vHeight };
-          }
+            /* ====== parallax starfield (brighter + fog-immune) ====== */
+            const starCount = 3500;
+            const starsGeo = new THREE.BufferGeometry();
+            const pos = new Float32Array(starCount * 3);
+            const col = new Float32Array(starCount * 3);
+            for (let i = 0; i < starCount; i++) {
+              const x = (Math.random() - 0.5) * 8000;
+              const z = (Math.random() - 0.2) * 14000;
+              const y = 60 + Math.random() * 1600;
+              pos[i*3+0] = x; pos[i*3+1] = y; pos[i*3+2] = z;
+              const t = Math.random();
+              const c = new THREE.Color().setRGB(0.48 + 0.52 * t, 0.95 - 0.35 * t, 1.00 - 0.05 * t);
+              col[i*3+0] = c.r; col[i*3+1] = c.g; col[i*3+2] = c.b;
+            }
+            starsGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+            starsGeo.setAttribute('color',    new THREE.BufferAttribute(col, 3));
+            const starsMat = new THREE.PointsMaterial({
+              size: 1.8, sizeAttenuation: true, vertexColors: true,
+              transparent: true, opacity: 0.9, depthWrite: false, fog: false
+            });
+            const stars = new THREE.Points(starsGeo, starsMat);
+            stars.renderOrder = -1;
+            scene.add(stars);
 
-          // blue-noise random layout inside an arena derived from visible size
-          function randomLayoutInView() {
-            const { vWidth, vHeight } = visibleSize();
+            /* ====== primitives + pastel Fresnel glow ====== */
+            const mats = [
+              new THREE.MeshStandardMaterial({ color: '#ff9ad6', roughness: 0.3, metalness: 0.1 }),
+              new THREE.MeshStandardMaterial({ color: '#a0f1e6', roughness: 0.25, metalness: 0.1 }),
+              new THREE.MeshStandardMaterial({ color: '#ffe08a', roughness: 0.35, metalness: 0.05 }),
+              new THREE.MeshStandardMaterial({ color: '#b4b9ff', roughness: 0.25, metalness: 0.1 }),
+            ];
+            const objs = [];
+            const glows = [];
+            let slots = null;
 
-            const N = baseGeos.length;
-            const out = [];
+            const geoCube   = new THREE.BoxGeometry(1.1, 1.1, 1.1);
+            const geoSphere = new THREE.SphereGeometry(0.8, 48, 32);
+            const geoCone   = new THREE.ConeGeometry(0.8, 1.4, 4);
+            const geoCyl    = new THREE.CylinderGeometry(0.7, 0.7, 1.3, 32);
+            const geoTorus  = new THREE.TorusGeometry(0.8, 0.25, 24, 64);
+            let teapotGeo = null;
+            try { teapotGeo = new THREE.TeapotGeometry(0.6, 10); } catch (e) { console.warn('teapot unavailable', e); }
+            const baseGeos = [geoCube, geoSphere, geoCone, geoCyl, geoTorus];
+            if (teapotGeo) baseGeos.push(teapotGeo);
+            
+            // compute per-geometry radii (for safe spacing)
+            baseGeos.forEach(g => g.computeBoundingSphere && g.computeBoundingSphere());
+            const radii = baseGeos.map(g => (g.boundingSphere ? g.boundingSphere.radius : 1.0));
 
-            // bounds
-            const halfW = vWidth * 0.48;
-            const xMin = -halfW, xMax = halfW;
-
-            const depthBand = Math.min(vWidth * 0.75, 12.0); // dynamic depth
-            const zMin = -depthBand, zMax = depthBand;
-
-            const yMin = -vHeight * 0.12, yMax = vHeight * 0.30;
-
-            const margin = 0.55;
-
-            function fits(ix, nx, nz) {
-              const needA = radii[ix] + margin;
-              for (let j = 0; j < out.length; j++) {
-                const need = needA + radii[out[j].i] + margin;
-                const dx = nx - out[j].x, dz = nz - out[j].z;
-                if ((dx*dx + dz*dz) < need*need) return false;
-              }
-              return true;
+            function makeGlowMesh(geometry, hexColor = '#ffffff', scale = 1.14, intensity = 1.0) {
+              const glowMat = new THREE.ShaderMaterial({
+                uniforms: { glowColor: { value: new THREE.Color(hexColor) }, intensity: { value: intensity } },
+                vertexShader: `
+                  uniform float intensity;
+                  varying float vFresnel;
+                  void main() {
+                    vec3 scaled = position * ${1.14};
+                    vec4 worldPos = modelMatrix * vec4(scaled, 1.0);
+                    vec3 worldNormal = normalize(mat3(modelMatrix) * normal);
+                    vec3 viewDir = normalize(cameraPosition - worldPos.xyz);
+                    vFresnel = pow(1.0 - max(dot(worldNormal, viewDir), 0.0), 2.0);
+                    gl_Position = projectionMatrix * viewMatrix * worldPos;
+                  }
+                `,
+                fragmentShader: `
+                  uniform vec3 glowColor;
+                  uniform float intensity;
+                  varying float vFresnel;
+                  void main() {
+                    float glow = vFresnel * 0.8 * intensity;
+                    gl_FragColor = vec4(glowColor, glow);
+                  }
+                `,
+                blending: THREE.AdditiveBlending,
+                transparent: true,
+                depthWrite: false,
+                side: THREE.BackSide
+              });
+              return new THREE.Mesh(geometry, glowMat);
             }
 
-            for (let i = 0; i < N; i++) {
-              let placed = false;
-              let tries = 0;
-              while (tries++ < 800) {
-                const nx = THREE.MathUtils.lerp(xMin, xMax, Math.random());
-                const nz = THREE.MathUtils.lerp(zMin, zMax, Math.random());
-                if (!fits(i, nx, nz)) continue;
-                const ny = THREE.MathUtils.lerp(yMin, yMax, Math.random());
-                out.push({ i, x: nx, y: ny, z: nz });
-                placed = true;
-                break;
-              }
-              if (!placed) {
-                // random fallback (still not colinear)
-                const nx = THREE.MathUtils.lerp(xMin*0.6, xMax*0.6, Math.random());
-                const nz = THREE.MathUtils.lerp(zMin*0.6, zMax*0.6, Math.random());
-                const ny = THREE.MathUtils.lerp(yMin, yMax, Math.random());
-                out.push({ i, x: nx, y: ny, z: nz });
-              }
+            // helper: visible size at the target (origin) from camera fov
+            function visibleSize() {
+              const dist = camera.position.distanceTo(new THREE.Vector3(0,0,0));
+              const vHeight = 2 * dist * Math.tan(THREE.MathUtils.degToRad(camera.fov * 0.5));
+              const vWidth  = vHeight * camera.aspect;
+              return { vWidth, vHeight };
             }
 
-            // slight relaxation
-            for (let iter = 0; iter < 6; iter++) {
-              for (let a = 0; a < N; a++) for (let b = a + 1; b < N; b++) {
-                const A = out[a], B = out[b];
-                const need = radii[A.i] + radii[B.i] + margin * 2.0;
-                let dx = B.x - A.x, dz = B.z - A.z;
-                const d2 = dx*dx + dz*dz;
-                if (d2 < need*need) {
-                  const d = Math.max(1e-4, Math.sqrt(d2));
-                  const push = (need - d) * 0.5;
-                  dx /= d; dz /= d;
-                  A.x = THREE.MathUtils.clamp(A.x - dx * push, xMin, xMax);
-                  A.z = THREE.MathUtils.clamp(A.z - dz * push, zMin, zMax);
-                  B.x = THREE.MathUtils.clamp(B.x + dx * push, xMin, xMax);
-                  B.z = THREE.MathUtils.clamp(B.z + dz * push, zMin, zMax);
+            // blue-noise random layout inside an arena derived from visible size
+            function randomLayoutInView() {
+              const { vWidth, vHeight } = visibleSize();
+
+              const N = baseGeos.length;
+              const out = [];
+
+              // bounds
+              const halfW = vWidth * 0.48;
+              const xMin = -halfW, xMax = halfW;
+
+              const depthBand = Math.min(vWidth * 0.75, 12.0); // dynamic depth
+              const zMin = -depthBand, zMax = depthBand;
+
+              const yMin = -vHeight * 0.12, yMax = vHeight * 0.30;
+
+              const margin = 0.55;
+
+              function fits(ix, nx, nz) {
+                const needA = radii[ix] + margin;
+                for (let j = 0; j < out.length; j++) {
+                  const need = needA + radii[out[j].i] + margin;
+                  const dx = nx - out[j].x, dz = nz - out[j].z;
+                  if ((dx*dx + dz*dz) < need*need) return false;
+                }
+                return true;
+              }
+
+              for (let i = 0; i < N; i++) {
+                let placed = false;
+                let tries = 0;
+                while (tries++ < 800) {
+                  const nx = THREE.MathUtils.lerp(xMin, xMax, Math.random());
+                  const nz = THREE.MathUtils.lerp(zMin, zMax, Math.random());
+                  if (!fits(i, nx, nz)) continue;
+                  const ny = THREE.MathUtils.lerp(yMin, yMax, Math.random());
+                  out.push({ i, x: nx, y: ny, z: nz });
+                  placed = true;
+                  break;
+                }
+                if (!placed) {
+                  // random fallback (still not colinear)
+                  const nx = THREE.MathUtils.lerp(xMin*0.6, xMax*0.6, Math.random());
+                  const nz = THREE.MathUtils.lerp(zMin*0.6, zMax*0.6, Math.random());
+                  const ny = THREE.MathUtils.lerp(yMin, yMax, Math.random());
+                  out.push({ i, x: nx, y: ny, z: nz });
                 }
               }
+
+              // slight relaxation
+              for (let iter = 0; iter < 6; iter++) {
+                for (let a = 0; a < N; a++) for (let b = a + 1; b < N; b++) {
+                  const A = out[a], B = out[b];
+                  const need = radii[A.i] + radii[B.i] + margin * 2.0;
+                  let dx = B.x - A.x, dz = B.z - A.z;
+                  const d2 = dx*dx + dz*dz;
+                  if (d2 < need*need) {
+                    const d = Math.max(1e-4, Math.sqrt(d2));
+                    const push = (need - d) * 0.5;
+                    dx /= d; dz /= d;
+                    A.x = THREE.MathUtils.clamp(A.x - dx * push, xMin, xMax);
+                    A.z = THREE.MathUtils.clamp(A.z - dz * push, zMin, zMax);
+                    B.x = THREE.MathUtils.clamp(B.x + dx * push, xMin, xMax);
+                    B.z = THREE.MathUtils.clamp(B.z + dz * push, zMin, zMax);
+                  }
+                }
+              }
+
+              const slotsOut = out.map(({x,y,z}) => ({x,y,z}));
+              console.log('aery slots:', slotsOut);
+              return slotsOut;
             }
 
-            const slotsOut = out.map(({x,y,z}) => ({x,y,z}));
-            console.log('aery slots:', slotsOut);
-            return slotsOut;
-          }
+            function layoutObjects() {
+              objs.forEach(m => scene.remove(m));
+              glows.forEach(g => scene.remove(g));
+              objs.length = 0; glows.length = 0;
 
-          function layoutObjects() {
-            objs.forEach(m => scene.remove(m));
-            glows.forEach(g => scene.remove(g));
-            objs.length = 0; glows.length = 0;
+              if (!slots) slots = randomLayoutInView();
 
-            if (!slots) slots = randomLayoutInView();
+              for (let i = 0; i < baseGeos.length; i++) {
+                const mesh = new THREE.Mesh(baseGeos[i], mats[i % mats.length]);
+                mesh.position.set(slots[i].x, slots[i].y, slots[i].z);
+                scene.add(mesh); objs.push(mesh);
 
-            for (let i = 0; i < baseGeos.length; i++) {
-              const mesh = new THREE.Mesh(baseGeos[i], mats[i % mats.length]);
-              mesh.position.set(slots[i].x, slots[i].y, slots[i].z);
-              scene.add(mesh); objs.push(mesh);
-
-              const tint = mats[i % mats.length].color.getStyle();
-              const glow = makeGlowMesh(baseGeos[i], tint, 1.14, 1.0);
-              glow.position.copy(mesh.position);
-              scene.add(glow); glows.push(glow);
-            }
-          }
-          layoutObjects();
-
-          function resize() {
-            const rect = canvas.getBoundingClientRect();
-            const w = rect.width  || window.innerWidth;
-            const h = rect.height || Math.max(520, window.innerHeight * 0.72);
-            renderer.setSize(w, h, false);
-            canvas.width  = Math.floor(w * DPR);
-            canvas.height = Math.floor(h * DPR);
-            camera.aspect = w / h;
-            camera.updateProjectionMatrix();
-
-            // clamp positions into the new arena
-            const { vWidth } = visibleSize();
-            const halfW = vWidth * 0.48;
-            const depthBand = Math.min(vWidth * 0.75, 12.0);
-            const zMin = -depthBand, zMax = depthBand;
-
-            if (slots) {
-              for (let i = 0; i < slots.length; i++) {
-                slots[i].x = Math.max(-halfW, Math.min(halfW, slots[i].x));
-                slots[i].z = Math.max(zMin,   Math.min(zMax,   slots[i].z));
-                if (objs[i])  { objs[i].position.x = slots[i].x; objs[i].position.z = slots[i].z; }
-                if (glows[i]) { glows[i].position.x = slots[i].x; glows[i].position.z = slots[i].z; }
+                const tint = mats[i % mats.length].color.getStyle();
+                const glow = makeGlowMesh(baseGeos[i], tint, 1.14, 1.0);
+                glow.position.copy(mesh.position);
+                scene.add(glow); glows.push(glow);
               }
             }
             layoutObjects();
-            dbg.textContent = `three ${THREE.REVISION} | ${w}×${h} | dpr ${DPR}`;
+
+            function resize() {
+              const rect = canvas.getBoundingClientRect();
+              const w = rect.width  || window.innerWidth;
+              const h = rect.height || Math.max(520, window.innerHeight * 0.72);
+              renderer.setSize(w, h, false);
+              canvas.width  = Math.floor(w * DPR);
+              canvas.height = Math.floor(h * DPR);
+              camera.aspect = w / h;
+              camera.updateProjectionMatrix();
+
+              // clamp positions into the new arena
+              const { vWidth } = visibleSize();
+              const halfW = vWidth * 0.48;
+              const depthBand = Math.min(vWidth * 0.75, 12.0);
+              const zMin = -depthBand, zMax = depthBand;
+
+              if (slots) {
+                for (let i = 0; i < slots.length; i++) {
+                  slots[i].x = Math.max(-halfW, Math.min(halfW, slots[i].x));
+                  slots[i].z = Math.max(zMin,   Math.min(zMax,   slots[i].z));
+                  if (objs[i])  { objs[i].position.x = slots[i].x; objs[i].position.z = slots[i].z; }
+                  if (glows[i]) { glows[i].position.x = slots[i].x; glows[i].position.z = slots[i].z; }
+                }
+              }
+              layoutObjects();
+              dbg.textContent = `three ${THREE.REVISION} | ${w}×${h} | dpr ${DPR}`;
+            }
+            window.addEventListener('resize', resize);
+            requestAnimationFrame(() => { resize(); tick(); });
+
+            const clock = new THREE.Clock();
+            function tick() {
+              const t = clock.getElapsedTime();
+              const dt = clock.getDelta();
+
+              objs.forEach((m, i) => {
+                m.rotation.y += 0.006 + i * 0.0007;
+                m.rotation.x  = Math.sin(t * 0.5 + i) * 0.5;
+                glows[i].rotation.copy(m.rotation);
+                glows[i].position.copy(m.position);
+              });
+
+              controls.update(dt);
+
+              stars.rotation.y += 0.0002;
+              stars.position.x = camera.position.x * 0.02;
+              stars.position.z = camera.position.z * 0.02;
+
+              renderer.render(scene, camera);
+              requestAnimationFrame(tick);
+            }
+          } catch (err) {
+            console.error(err);
+            const msg = (err && err.message) ? err.message : String(err);
+            const loc = (err && err.stack && err.stack.split('\n')[1]) ? err.stack.split('\n')[1].trim() : '';
+            document.querySelector('#debug').textContent = `error: ${msg} ${loc}`;
           }
-          window.addEventListener('resize', resize);
-          requestAnimationFrame(() => { resize(); tick(); });
-
-          const clock = new THREE.Clock();
-          function tick() {
-            const t = clock.getElapsedTime();
-            const dt = clock.getDelta();
-
-            objs.forEach((m, i) => {
-              m.rotation.y += 0.006 + i * 0.0007;
-              m.rotation.x  = Math.sin(t * 0.5 + i) * 0.5;
-              glows[i].rotation.copy(m.rotation);
-              glows[i].position.copy(m.position);
-            });
-
-            controls.update(dt);
-
-            stars.rotation.y += 0.0002;
-            stars.position.x = camera.position.x * 0.02;
-            stars.position.z = camera.position.z * 0.02;
-
-            renderer.render(scene, camera);
-            requestAnimationFrame(tick);
-          }
-        } catch (err) {
-          console.error(err);
-          const msg = (err && err.message) ? err.message : String(err);
-          const loc = (err && err.stack && err.stack.split('\n')[1]) ? err.stack.split('\n')[1].trim() : '';
-          document.querySelector('#debug').textContent = `error: ${msg} ${loc}`;
-        }
-      });
-
-      // footer mailto
-      document.addEventListener('DOMContentLoaded', () => {
-        document.getElementById('year').textContent = new Date().getFullYear();
-        const form = document.querySelector('form[data-mailto]');
-        if (form) form.addEventListener('submit', (e) => {
-          e.preventDefault();
-          const data = new FormData(form);
-          const subject = encodeURIComponent(`[aery records] message from ${data.get('name')||'anon'}`);
-          const body = encodeURIComponent(`${data.get('message')||''}\n\nfrom: ${data.get('name')||''} <${data.get('email')||''}>`);
-          location.href = `mailto:aeryrecords@example.com?subject=${subject}&body=${body}`;
         });
-      });
-    </script>
+
+        // footer mailto
+        document.addEventListener('DOMContentLoaded', () => {
+          document.getElementById('year').textContent = new Date().getFullYear();
+          const form = document.querySelector('form[data-mailto]');
+          if (form) form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const data = new FormData(form);
+            const subject = encodeURIComponent(`[aery records] message from ${data.get('name')||'anon'}`);
+            const body = encodeURIComponent(`${data.get('message')||''}\n\nfrom: ${data.get('name')||''} <${data.get('email')||''}>`);
+            location.href = `mailto:aeryrecords@example.com?subject=${subject}&body=${body}`;
+          });
+        });
+      </script>
+    </div>
   </body>
 </html>
