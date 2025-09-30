@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>aery studio — book time</title>
+  <meta name="description" content="aery studio — book recording, production, and mixing time without double booking." />
+  <link rel="preconnect" href="https://unpkg.com" />
+  <style>
+    /* ===== aery records shared theme (lowercase on purpose) ===== */
+    :root{
+      --bg1:#f7d9ff; --bg2:#b8e6ff;
+      --glass:rgba(255,255,255,.88);
+      --glass-soft:rgba(255,255,255,.74);
+      --glass-stroke:rgba(255,255,255,.95);
+      --ink:#222325; --ink-muted:#4a4c50;
+      --accent:#ff7ab6; --accent-2:#7af0e0; --accent-3:#ffd36e;
+    }
+    *{box-sizing:border-box} html,body{height:100%}
+    body{
+      margin:0; color:var(--ink);
+      font-family:ui-rounded,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif;
+      background:linear-gradient(180deg,var(--bg1),var(--bg2)) fixed;
+      text-transform:lowercase; overflow-x:hidden;
+    }
+    .wrap{max-width:1100px;margin:0 auto;padding:16px 20px}
+    .row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+    .pill{display:inline-block;padding:8px 14px;border-radius:999px;background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#111;font-weight:800;text-decoration:none;border:1px solid rgba(255,255,255,.6);box-shadow:0 6px 18px rgba(0,0,0,.1)}
+    header.site{position:sticky;top:0;z-index:3;backdrop-filter:blur(10px) saturate(140%);background:linear-gradient(90deg, rgba(255,255,255,.8), rgba(255,255,255,.55));border-bottom:1px solid var(--glass-stroke)}
+    .brand{display:flex;gap:12px;align-items:center;font-weight:700;letter-spacing:.5px}
+    .dot{width:10px;height:10px;border-radius:999px;background:linear-gradient(135deg,var(--accent),var(--accent-2));box-shadow:0 0 14px var(--accent)}
+    nav a{color:var(--ink);text-decoration:none;margin-right:18px;font-weight:600;opacity:.9}
+    nav a:hover{text-decoration:underline;opacity:1}
+
+    .hero{position:relative;min-height:48vh;display:grid;place-items:center;padding:48px 20px 24px}
+    .hero-copy{position:relative;z-index:2;text-align:center;max-width:780px;background:linear-gradient(180deg, var(--glass), var(--glass-soft));border:1px solid var(--glass-stroke);border-radius:24px;padding:24px 22px;box-shadow:0 20px 40px rgba(0,0,0,.08)}
+    h1{margin:0 0 8px;font-size:clamp(28px,5vw,56px);line-height:1.02}
+    .tag{color:var(--ink-muted)}
+
+    section{position:relative;z-index:2}
+    .panel{background:linear-gradient(180deg,var(--glass),var(--glass-soft));border:1px solid var(--glass-stroke);border-radius:24px;padding:24px;margin:40px 20px;box-shadow:0 20px 40px rgba(0,0,0,.06)}
+    .panel.centered {
+      max-width: 1000px;   /* control how wide the panel can be */
+      margin: 40px auto;  /* centers horizontally */
+      text-align: center; /* optional: center text + contents */
+    }
+    .kicker{color:var(--accent);font-weight:700;letter-spacing:.08em;font-size:12px;text-transform:uppercase}
+    h2{margin:6px 0 14px;font-size:clamp(22px,3vw,34px)}
+    .muted{color:var(--ink-muted)}
+
+    /* pricing cards */
+    .pricing{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px}
+    .price{background:rgba(255,255,255,.9);border:1px solid var(--glass-stroke);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:8px}
+    .price .name{font-weight:800}
+    .price .cost{font-size:28px;font-weight:800}
+    .price ul{margin:8px 0 0 18px;padding:0}
+    .price li{margin:4px 0}
+    .price .cta{margin-top:8px}
+
+    /* booking embed box */
+    .booking-box{background:rgba(255,255,255,.92);border:1px solid var(--glass-stroke);border-radius:18px;padding:0;overflow:hidden}
+    .booking-head{padding:16px 16px 0}
+    .booking-embed{width:100%;min-height:720px;border:0;display:block}
+
+    /* contact form (fallback) */
+    .contact-form{display:grid;gap:14px;max-width:800px;margin:8px auto 0}
+    .contact-form label{display:grid;gap:6px}
+    .contact-form input,.contact-form textarea{
+      width:100%;padding:12px 14px;border-radius:14px;border:1px solid var(--glass-stroke);background:rgba(255,255,255,.98);font:inherit;color:var(--ink);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.6),0 8px 20px rgba(0,0,0,.04);outline:none
+    }
+    .contact-form textarea{min-height:120px;resize:vertical}
+    .contact-form .actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    .contact-form button{border-radius:999px;padding:10px 18px;border:1px solid rgba(0,0,0,.05);background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#111;font-weight:800;cursor:pointer;box-shadow:0 10px 20px rgba(0,0,0,.08)}
+    #status{min-height:1.2em;font-size:13px;color:var(--ink-muted)}
+    #status.ok{color:#167c5a} #status.err{color:#b00020}
+
+    footer.site{color:var(--ink-muted);text-align:center;padding:56px 10px 40px}
+  </style>
+</head>
+<body>
+  <!-- svg filter for gentle barrel-warp -->
+  <svg width="0" height="0" style="position:absolute">
+    <defs>
+      <filter id="crt-warp">
+        <feTurbulence type="fractalNoise" baseFrequency="0.0015" numOctaves="1" seed="8" result="noise"/>
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="6" xChannelSelector="R" yChannelSelector="G"/>
+      </filter>
+    </defs>
+  </svg>
+
+  <!-- wrap ALL page content so CRT can target it as one unit -->
+  <div id="site-wrap">
+    <header class="site">
+      <div class="wrap row" style="justify-content:space-between;">
+        <div class="brand"><span class="dot"></span><span>aery records</span></div>
+        <nav>
+          <a href="/">home</a>
+          <a href="/#releases">releases</a>
+          <a href="/#lineup">lineup</a>
+          <a href="/#news">news</a>
+          <a href="/#about">about</a>
+          <a href="/studio" aria-current="page">studio</a>
+        </nav>
+      </div>
+    </header>
+
+    <section class="hero">
+      <div class="hero-copy">
+        <h1>aery studio</h1>
+        <div class="tag">recording • production • mixing • mastering</div>
+        <div style="height:8px"></div>
+        <a class="pill" href="#book">book time</a>
+      </div>
+    </section>
+
+    <!-- pricing -->
+    <section class="panel wrap centered">
+      <div class="kicker">rates</div>
+      <h2>pick your path</h2>
+      <div class="pricing">
+        <!-- option 1: hourly -->
+        <div class="price">
+          <div class="name">hourly</div>
+          <div class="muted">pay as you go</div>
+          <div class="cost">$60<span style="font-size:14px;font-weight:700">/hr</span></div>
+          <ul>
+            <li>engineer included</li>
+            <li>recording / edit / mix</li>
+            <li>delliverable: demo + stems
+            <li>no commitment</li>
+          </ul>
+          <div class="cta"><a class="pill" href="#book">book hourly</a></div>
+        </div>
+        <!-- option 2: co-op membership -->
+        <div class="price">
+          <div class="name">co-op</div>
+          <div class="muted">monthly membership</div>
+          <div class="cost">$120<span style="font-size:14px;font-weight:700">/mo</span></div>
+          <ul>
+            <li>includes 4 free hours / month</li>
+            <li>extra time: $35/hr member rate</li>
+            <li>priority booking + community perks such as discord and ability to ask me questions any time</li>
+          </ul>
+          <div class="cta"><a class="pill" href="#book">join co-op</a></div>
+        </div>
+        <!-- option 3: label artist -->
+        <div class="price">
+          <div class="name">label artist</div>
+          <div class="muted">full-stack support</div>
+          <div class="cost">apply</div>
+          <ul>
+            <li>all the benefits of co-op</li>
+            <li>distribution handled</li>
+            <li>collab on marketing & product</li>
+          </ul>
+          <div class="cta"><a class="pill" href="#apply">apply to label</a></div>
+        </div>
+      </div>
+      <p class="muted" style="margin-top:10px"><i>co-op rates are sliding scale, include in your message your circumstances</i></p>
+    </section>
+
+    <!-- booking -->
+    <section id="book" class="panel wrap centered">
+      <div class="kicker">schedule</div>
+      <h2>book time</h2>
+      <!-- Calendly inline widget begin -->
+      <div class="calendly-inline-widget" data-url="https://calendly.com/admin-aeryrecords/30min?primary_color=a400f7" style="min-width:320px;height:700px;"></div>
+      <script type="text/javascript" src="https://assets.calendly.com/assets/external/widget.js" async></script>
+      <!-- Calendly inline widget end -->
+
+      <noscript>
+        <p class="muted">javascript is off — email <a href="mailto:aeryrecords@example.com">aeryrecords@example.com</a> to book.</p>
+      </noscript>
+    </section>
+
+    <!-- label artist application / contact -->
+    <section id="apply" class="panel wrap centered">
+      <div class="kicker">apply</div>
+      <h2>join the label</h2>
+      <p class="muted">tell us about you, links, and what you want to make together.</p>
+      <form class="contact-form" action="https://formspree.io/f/xldwqqpo" method="POST">
+        <label>
+          <span>name</span>
+          <input type="text" name="name" placeholder="your name" required />
+        </label>
+        <label>
+          <span>email</span>
+          <input type="email" name="email" placeholder="your@email" required />
+        </label>
+        <label>
+          <span>links</span>
+          <input type="text" name="links" placeholder="bandcamp / socials / portfolio" />
+        </label>
+        <label>
+          <span>message</span>
+          <textarea name="message" rows="5" placeholder="what do you want to make?" required></textarea>
+        </label>
+        <div class="actions">
+          <button type="submit">send</button>
+          <span id="status" aria-live="polite"></span>
+        </div>
+        <input type="text" name="_gotcha" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px;opacity:0" aria-hidden="true" />
+      </form>
+    </section>
+
+    <footer class="site">
+      <div>© <span id="year">2025</span> aery records — all love.</div>
+    </footer>
+  </div>
+  <!-- tiny helpers -->
+  <script>
+    // year
+    document.addEventListener('DOMContentLoaded',()=>{ const y=document.getElementById('year'); if(y) y.textContent=new Date().getFullYear(); });
+
+    // formspree ajax (nice status)
+    (function(){
+      const form=document.querySelector('#apply form, form.contact-form')||document.querySelector('form.contact-form');
+      const status=document.getElementById('status');
+      if(!form||!status) return;
+      form.addEventListener('submit',async(e)=>{
+        e.preventDefault(); status.className=''; status.textContent='sending…';
+        try{
+          const res=await fetch(form.action,{method:form.method,body:new FormData(form),headers:{Accept:'application/json'}});
+          if(res.ok){ form.reset(); status.className='ok'; status.textContent='got it — we’ll be in touch ✨'; }
+          else{ status.className='err'; status.textContent='something went wrong'; }
+        }catch(_){ status.className='err'; status.textContent='network hiccup — try again?'; }
+      });
+    })();
+
+    // ⚡️ paste your live booking page URL here:
+    // - Google Appointment Schedules: open your schedule → "Share" → copy link
+    // - Calendly: "Embed → Inline" URL
+    (function(){
+      const EMBED_URL = ""; // e.g. "https://calendar.google.com/calendar/appointments/schedules/AcZ.../bookings?gv=true"
+      const el = document.querySelector('.booking-embed');
+      if (el && EMBED_URL) el.src = EMBED_URL;
+      else if (el) el.src = "data:text/html;charset=utf-8," + encodeURIComponent(
+        '<div style="font:14px/1.4 system-ui;padding:24px;text-align:center;color:#555">set your booking url in studio.html → EMBED_URL<br><br><code>https://…</code></div>'
+      );
+    })();
+  </script>
+</body>
+</html>
