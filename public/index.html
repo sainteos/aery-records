@@ -43,14 +43,35 @@
       nav a { color: var(--ink); text-decoration: none; margin-right: 18px; font-weight: 600; opacity: .9; }
       nav a:hover { opacity: 1; text-decoration: underline; }
 
-      .under-construction {
-        position: relative; z-index: 4;
-        background: repeating-linear-gradient(135deg, #000 0 12px, #ffd36e 12px 24px);
-        color: #000; text-align: center; font-weight: 800; letter-spacing: 1px;
-        padding: 8px 0;
-        text-shadow: 0 1px 0 rgba(255,255,255,.5);
-      }
+      /* replace your existing .under-construction with this */
+      .under-construction{
+        position: sticky; top: 0; z-index: 9999;
+        /* animated diagonal barber-pole */
+        --stripe1:#000; --stripe2:#ffd36e;
+        background:
+          repeating-linear-gradient(135deg,
+            var(--stripe1) 0 12px,
+            var(--stripe2) 12px 24px);
+        background-size: 200% 200%;
+        animation: uc-stripes 30s linear infinite;
 
+        color:#000; text-align:center;
+        font-weight: 900;
+        letter-spacing:.08em;
+        font-size: clamp(14px, 2.2vw, 18px);
+        padding:10px 0;
+
+        /* make it pop off the page */
+        box-shadow: 0 6px 18px rgba(0,0,0,.18);
+        border-bottom: 2px solid rgba(0,0,0,.4);
+        text-shadow:
+          0 1px 0 rgba(255,255,255,.65),
+          0 0 10px rgba(255,211,110,.35);
+      }
+      @keyframes uc-stripes{
+        0%{ background-position:0 0; }
+        100%{ background-position:100% 100%; }
+      }
       .hero {
         position: relative; z-index: 1;
         min-height: 70vh;
