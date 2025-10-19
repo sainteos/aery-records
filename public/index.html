@@ -113,8 +113,23 @@
       .lineup {
         display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; margin-bottom: 20px;
       }
+      /* match lineup artist links to header nav links */
+      .lineup a {
+        text-decoration: underline;
+        color: inherit; /* use the header font color */
+        font-weight: 600; /* if your header uses this */
+        text-transform: lowercase; /* if header links do this */
+        letter-spacing: 0.05em;
+        transition: color 0.2s ease, opacity 0.2s ease;
+      }
+
+      .lineup a:hover {
+        color: var(--accent, #ff7ad6); /* or same hover color as header links */
+        opacity: 0.85;
+      }
       .artist { background: rgba(255,255,255,.65); border: 1px solid var(--glass-stroke); border-radius: 18px; padding: 14px; }
       .artist .name { font-weight: 700; margin-bottom: 6px; }
+      
       .embed { aspect-ratio: 1.4 / 1; width: 100%; border: none; border-radius: 12px; overflow: hidden; background: #eee; }
       .embed + .note { font-size: 12px; color: var(--ink-muted); margin-top: 6px; }
 
@@ -431,7 +446,7 @@
         <h2>artists</h2>
         <div class="lineup">
           <div class="artist">
-            <div class="name">nixie halcyon</div>
+            <a href="/artists/nixie-halcyon.html" class="name">nixie halcyon</a>
             <iframe class="embed" title="nixie halcyon" loading="lazy"
               src="https://bandcamp.com/EmbeddedPlayer/album=3699429914/size=large/bgcol=ffffff/linkcol=0687f5/transparent=true/"></iframe>
             <div class="note">bandcamp: <a href="https://nixiehalcyon.bandcamp.com" target="_blank" rel="noopener">nixiehalcyon.bandcamp.com</a></div>

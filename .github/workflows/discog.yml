@@ -1,0 +1,44 @@
+name: build-discography
+
+on:
+  schedule:
+    - cron: "17 7 * * *"   # daily at 07:17 UTC (pick your fave time)
+  push:
+    branches: [ main ]
+
+jobs:
+  discog:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # to commit the updated JSON
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Generate discography JSON
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund || true
+          npm run discog
+
+      - name: Commit changes
+        run: |
+          git config user.name "aery bot"
+          git config user.email "bot@aeryrecords.com"
+          git add public/discog/*.json
+          git diff --quiet && echo "No changes" || git commit -m "chore(discog): update $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          git push
+
+      # OPTIONAL: Deploy to Neocities (needs NEOCITIES_API_TOKEN secret)
+      - name: Deploy to Neocities
+        if: ${{ secrets.NEOCITIES_API_TOKEN != '' }}
+        uses: bcomnes/deploy-to-neocities@v2
+        with:
+          api_token: ${{ secrets.NEOCITIES_API_TOKEN }}
+          cleanup: false
+          dist_dir: public

@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": ""
+    "build": "",
+    "discog": "node scripts/scrape-bandcamp.js"
   },
   "repository": {
     "type": "git",
@@ -14,9 +15,12 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
   "bugs": {
     "url": "https://github.com/sainteos/aery-records/issues"
   },
-  "homepage": "https://github.com/sainteos/aery-records#readme"
+  "homepage": "https://github.com/sainteos/aery-records#readme",
+  "engines": {
+    "node": ">=18"
+  }
 }
