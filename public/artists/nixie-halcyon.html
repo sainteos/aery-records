@@ -197,12 +197,12 @@
     <script>
     (async () => {
       const slot = document.getElementById('discog');
-      if (!slot) return;
+      const name = document.body.dataset.discog || 'nixiehalcyon';
+      const jsonUrl = `/discog/${name}.json`;
 
       // auto-detect artist slug from the filename, e.g. /artists/nixiehalcyon.html → nixiehalcyon
       const path = location.pathname;
       const slug = path.split('/').pop().replace(/\.html$/, '') || 'index';
-      const jsonUrl = `/discog/${slug}.json`;
 
       try {
         const res = await fetch(jsonUrl, { cache: 'no-store' });
