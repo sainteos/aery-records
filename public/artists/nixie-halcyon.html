@@ -58,10 +58,10 @@
     /* Center-align content sections on artist pages */
     .artist-page section,
     .artist-page .panel {
-      max-width: 900px;       /* or match your homepage panel width */
-      margin: 0 auto;         /* centers horizontally */
-      text-align: center;     /* centers text inside the panel */
-      margin-bottom: 2rem; /* adjust space as needed */
+      max-width: 900px;
+      margin: 0 auto;
+      text-align: center;
+      margin-bottom: 2rem;
     }
 
     .two-col{display:grid;grid-template-columns:1.1fr .9fr;gap:18px}
@@ -70,7 +70,7 @@
     .embed{
       aspect-ratio: 1.4 / 1;
       width: 100%;
-      max-width: 720px; /* cap if you like */
+      max-width: 720px;
       border: 0;
       border-radius: 12px;
       display: block;
@@ -115,17 +115,7 @@
     @media (prefers-reduced-motion:reduce){ .crt-overlay{animation:none} }
   </style>
 </head>
-<script>
-  // measure header and set --header-h so the page gets proper top padding
-  (function(){
-    const hdr = document.querySelector('header.site');
-    if (!hdr) return;
-    const set = () => document.documentElement.style.setProperty('--header-h', hdr.offsetHeight + 'px');
-    set();
-    new ResizeObserver(set).observe(hdr);
-    window.addEventListener('resize', set);
-  })();
-</script>
+
 <body class="artist-page" data-discog="nixiehalcyon">
   <!-- gentle warp filter -->
   <svg width="0" height="0" style="position:absolute">
@@ -189,65 +179,14 @@
       </div>
     </section>
 
+    <!-- DISCOGRAPHY -->
     <section class="panel wrap">
       <div class="kicker" id="releases">releases</div>
       <h2>discography</h2>
       <div id="discog" class="discog"></div>
     </section>
-    <script>
-    (async () => {
-      const slot = document.getElementById('discog');
-      const name = document.body.dataset.discog || 'nixiehalcyon';
-      const jsonUrl = `/discog/${name}.json`;
 
-      // auto-detect artist slug from the filename, e.g. /artists/nixiehalcyon.html → nixiehalcyon
-      const path = location.pathname;
-      const slug = path.split('/').pop().replace(/\.html$/, '') || 'index';
-
-      try {
-        const res = await fetch(jsonUrl, { cache: 'no-store' });
-        if (!res.ok) throw new Error(res.status);
-        const data = await res.json();
-
-        const frag = document.createDocumentFragment();
-        (data.items || []).forEach(it => {
-          const card = document.createElement('a');
-          card.className = 'release';
-          card.href = it.url;
-          card.target = '_blank';
-          card.rel = 'noopener';
-
-          if (it.art) {
-            const img = document.createElement('img');
-            img.src = it.art;
-            img.alt = it.title || 'artwork';
-            card.appendChild(img);
-          }
-
-          const title = document.createElement('div');
-          title.innerHTML = `<b>${it.title}</b>`;
-          card.appendChild(title);
-
-          const iframe = document.createElement('iframe');
-          iframe.className = 'embed';
-          iframe.loading = 'lazy';
-          iframe.style.border = 0;
-          iframe.src = `https://bandcamp.com/EmbeddedPlayer/album=${it.album}/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=false/transparent=true/`;
-          card.appendChild(iframe);
-
-          frag.appendChild(card);
-        });
-
-        slot.textContent = '';
-        slot.appendChild(frag);
-      } catch (e) {
-        console.warn('discog load failed', e);
-        slot.textContent = 'discography unavailable right now';
-      }
-    })();
-    </script>
-
-    <!-- CONTACT (FOR THIS ARTIST) -->
+    <!-- CONTACT -->
     <section class="panel wrap">
       <div class="kicker">contact</div>
       <h2>booking / press</h2>
@@ -283,8 +222,18 @@
   <div class="crt-bezel" aria-hidden="true"></div>
   <button id="crt-toggle" type="button" title="toggle crt">crt</button>
 
-  <!-- tiny helpers -->
+  <!-- scripts -->
   <script>
+    // header height → body padding (run after header exists)
+    document.addEventListener('DOMContentLoaded', () => {
+      const hdr = document.querySelector('header.site');
+      if (!hdr) return;
+      const set = () => document.documentElement.style.setProperty('--header-h', hdr.offsetHeight + 'px');
+      set();
+      new ResizeObserver(set).observe(hdr);
+      window.addEventListener('resize', set);
+    });
+
     // year
     document.addEventListener('DOMContentLoaded',()=>{ const y=document.getElementById('year'); if(y) y.textContent=new Date().getFullYear(); });
 
@@ -316,6 +265,92 @@
       });
       set();
     })();
+
+    // === discography loader (auto, robust, with debug chip via ?debug=1) ===
+    document.addEventListener('DOMContentLoaded', async () => {
+      const slot = document.getElementById('discog');
+      if (!slot) return;
+
+      const DEBUG = /[?&]debug=1\b/.test(location.search);
+      let chip;
+      if (DEBUG) {
+        chip = document.createElement('div');
+        Object.assign(chip.style, {
+          position:'fixed', right:'8px', bottom:'8px', zIndex: 99999,
+          background:'rgba(0,0,0,.7)', color:'#fff', padding:'6px 10px',
+          font:'12px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace',
+          borderRadius:'8px'
+        });
+        chip.textContent = 'discog: booting…';
+        document.body.appendChild(chip);
+      }
+
+      // priority: data attribute → filename → fallback
+      const bodySlug = (document.body.dataset.discog || '').trim();
+      const fileSlug = location.pathname.split('/').pop().replace(/\.html$/,'');
+      let slug = (bodySlug || fileSlug || '').toLowerCase();
+      // normalize (strip non-alphanumerics)
+      slug = slug.replace(/[^a-z0-9]/gi, '');
+
+      // build URL (root-relative)
+      const jsonUrl = `/discog/${slug}.json`;
+      if (DEBUG) chip.textContent = `discog: fetching ${jsonUrl}`;
+
+      // fetch JSON
+      let data;
+      try {
+        const res = await fetch(jsonUrl, { cache: 'no-store' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        data = await res.json();
+      } catch (err) {
+        if (DEBUG) chip.textContent = `discog: ${err.message}`;
+        slot.textContent = 'discography unavailable right now';
+        return;
+      }
+
+      const items = Array.isArray(data.items) ? data.items : [];
+      if (DEBUG) chip.textContent = `discog: ${items.length} items`;
+
+      slot.classList.add('discog'); // ensure grid
+      if (!items.length) {
+        slot.innerHTML = '<div class="muted">no releases found yet</div>';
+        return;
+      }
+
+      const frag = document.createDocumentFragment();
+      for (const it of items) {
+        const card = document.createElement('a');
+        card.className = 'release';
+        card.href = it.url || '#';
+        card.target = '_blank';
+        card.rel = 'noopener';
+
+        if (it.art) {
+          const img = document.createElement('img');
+          img.src = it.art;
+          img.alt = it.title || 'artwork';
+          card.appendChild(img);
+        }
+
+        const title = document.createElement('div');
+        title.innerHTML = `<b>${it.title || 'untitled'}</b>`;
+        card.appendChild(title);
+
+        if (it.album) {
+          const iframe = document.createElement('iframe');
+          iframe.className = 'embed';
+          iframe.loading = 'lazy';
+          iframe.title = `bandcamp: ${it.title || ''}`;
+          iframe.src = `https://bandcamp.com/EmbeddedPlayer/album=${it.album}/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=false/transparent=true/`;
+          card.appendChild(iframe);
+        }
+
+        frag.appendChild(card);
+      }
+
+      slot.textContent = '';
+      slot.appendChild(frag);
+    });
   </script>
 </body>
 </html>
