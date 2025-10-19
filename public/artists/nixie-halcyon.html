@@ -194,16 +194,15 @@
       <h2>discography</h2>
       <div id="discog" class="discog"></div>
     </section>
-
     <script>
     (async () => {
       const slot = document.getElementById('discog');
       if (!slot) return;
 
-      // choose which JSON to load based on the page
-      // e.g. artist page:
-      const jsonUrl = '/discog/nixiehalcyon.json';
-      // or on homepage, loop both artists and merge.
+      // auto-detect artist slug from the filename, e.g. /artists/nixiehalcyon.html → nixiehalcyon
+      const path = location.pathname;
+      const slug = path.split('/').pop().replace(/\.html$/, '') || 'index';
+      const jsonUrl = `/discog/${slug}.json`;
 
       try {
         const res = await fetch(jsonUrl, { cache: 'no-store' });
@@ -214,11 +213,14 @@
         (data.items || []).forEach(it => {
           const card = document.createElement('a');
           card.className = 'release';
-          card.href = it.url; card.target = '_blank'; card.rel = 'noopener';
+          card.href = it.url;
+          card.target = '_blank';
+          card.rel = 'noopener';
 
           if (it.art) {
             const img = document.createElement('img');
-            img.src = it.art; img.alt = it.title || 'artwork';
+            img.src = it.art;
+            img.alt = it.title || 'artwork';
             card.appendChild(img);
           }
 
@@ -226,11 +228,9 @@
           title.innerHTML = `<b>${it.title}</b>`;
           card.appendChild(title);
 
-          // inline Bandcamp embed (responsive via your .embed CSS)
           const iframe = document.createElement('iframe');
           iframe.className = 'embed';
           iframe.loading = 'lazy';
-          iframe.title = `bandcamp: ${it.title}`;
           iframe.style.border = 0;
           iframe.src = `https://bandcamp.com/EmbeddedPlayer/album=${it.album}/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=false/transparent=true/`;
           card.appendChild(iframe);
