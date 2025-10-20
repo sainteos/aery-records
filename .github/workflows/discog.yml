@@ -7,13 +7,15 @@ on:
     branches: [ main ]
 
 jobs:
+  # 1) scrape per-artist (sequential to avoid git conflicts)
   discog:
     runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 1
+      matrix:
+        artist: [ "nixiehalcyon", "partyboob420" ]
     permissions:
       contents: write
-
-    env:
-      NEOCITIES_API_TOKEN: ${{ secrets.NEOCITIES_API_TOKEN }}
 
     steps:
       - name: Checkout
@@ -30,22 +32,32 @@ jobs:
       - name: Install deps
         run: npm ci --ignore-scripts --no-audit --no-fund
 
-      - name: Generate discography JSON (all artists)
-        run: npm run discog
+      # IMPORTANT: run scraper for the matrix artist
+      # Make sure your scraper writes to public/discog/${slug}.json
+      - name: Generate discography JSON for ${{ matrix.artist }}
+        run: node scripts/scrape-bandcamp.js ${{ matrix.artist }}
 
-      - name: Commit changes
+      - name: Commit changes for ${{ matrix.artist }}
         run: |
           git config user.name "aery bot"
           git config user.email "bot@aeryrecords.com"
           mkdir -p public/discog
-          git add public/discog/*.json
-          git diff --quiet && echo "No changes" || git commit -m "chore(discog): update $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          git add public/discog/${{ matrix.artist }}.json
+          git diff --cached --quiet && echo "No changes for ${{ matrix.artist }}" || git commit -m "discog: ${{ matrix.artist }} $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
           git push
 
+  # 2) deploy once after all artists have been processed
+  deploy:
+    needs: discog
+    runs-on: ubuntu-latest
+    if: ${{ secrets.NEOCITIES_API_TOKEN != '' }}
+    steps:
+      - name: Checkout (latest pushed content)
+        uses: actions/checkout@v4
+
       - name: Deploy to Neocities
-        if: ${{ env.NEOCITIES_API_TOKEN != '' }}
         uses: bcomnes/deploy-to-neocities@v2
         with:
-          api_token: ${{ env.NEOCITIES_API_TOKEN }}
+          api_token: ${{ secrets.NEOCITIES_API_TOKEN }}
           cleanup: false
           dist_dir: public
