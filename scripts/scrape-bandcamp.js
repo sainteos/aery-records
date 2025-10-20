@@ -56,35 +56,83 @@ function extractTitle($) {
 function extractArt($) {
   return $('meta[property="og:image"]').attr('content') || '';
 }
-
+function findAlbumFromTrack($$, base) {
+  // Lots of track pages have “from <album> by …” with a link to /album/...
+  // We take the first same-host /album/ link we see in the main content.
+  let albumHref = null;
+  $$('.fromAlbum a[href^="/album/"], a[href^="/album/"]').each((_, a) => {
+    if (albumHref) return;
+    const href = $$(a).attr('href');
+    try {
+      const u = new URL(href, base);
+      albumHref = u.toString();
+    } catch(_) {}
+  });
+  return albumHref;
+}
 async function scrapeArtist(slug) {
   const base = `https://${slug}.bandcamp.com`;
   const listUrl = `${base}/music`;
   const html = await get(listUrl);
   const $ = cheerio.load(html);
 
-  // Gather album links from the grid; fallback to any /album/ link
+  // Gather album/track links on the same host only (strip tracking params)
+  const host = `${slug}.bandcamp.com`;
   const links = new Set();
-  $('.music-grid .item a[href*="/album/"]').each((_, a) => {
-    const href = $(a).attr('href');
-    if (href) links.add(new URL(href, base).href);
-  });
-  if (links.size === 0) {
-    $('a[href*="/album/"]').each((_, a) => {
-      const href = $(a).attr('href');
-      if (href) links.add(new URL(href, base).href);
-    });
-  }
+
+  const addLink = (href) => {
+    if (!href) return;
+    try {
+      const u = new URL(href, base);
+      if (u.hostname !== host) return;                // same artist subdomain only
+      if (!/^\/(album|track)\//.test(u.pathname)) return; // album or track pages only
+      u.search = '';
+      u.hash = '';
+      links.add(u.toString());
+    } catch (_) {}
+  };
+
+  // preferred grid
+  $('.music-grid .item a[href]').each((_, a) => addLink($(a).attr('href')));
+  // fallback scan
+  $('a[href*="/album/"], a[href*="/track/"]').each((_, a) => addLink($(a).attr('href')));
 
   const items = [];
-  for (const url of Array.from(links)) {
+  const queue = Array.from(links);  // start with discovered links
+  const seen  = new Set();          // URLs we have processed (or decided to skip)
+
+  while (queue.length) {
+    const url = queue.shift();
+    if (seen.has(url)) continue;
+    seen.add(url);
+
     try {
-      const page = await get(url);
-      const $$ = cheerio.load(page);
-      const albumId = extractAlbumId(page);
-      const title   = extractTitle($$) || 'untitled';
-      const art     = extractArt($$);
-      items.push({ title, url, art, album: albumId || '' });
+      const u = new URL(url);
+      if (u.hostname !== host) continue; // double safety
+
+      const page = await get(u.href);
+      const $$   = cheerio.load(page);
+
+      // If this is a track page and it links “from” an album, collapse into the album
+      const isTrack = /^\/track\//.test(u.pathname);
+      if (isTrack) {
+        const albumUrl = findAlbumFromTrack($$, base);
+        if (albumUrl) {
+          // collapse: enqueue the album, skip the track
+          if (!seen.has(albumUrl) && !queue.includes(albumUrl)) queue.push(albumUrl);
+          continue;
+        }
+        // Otherwise: treat as a single (keep the track page)
+      }
+
+      // Prefer albumId for embeds, but don't drop the item if missing
+      const albumId = extractAlbumId(page) || '';
+
+      const title = extractTitle($$) || 'untitled';
+      const art   = extractArt($$);
+
+      items.push({ title, url: u.href, art, album: albumId });
+
       // be polite
       await sleep(400);
     } catch (e) {
