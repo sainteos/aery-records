@@ -1,12 +1,13 @@
 // scripts/scrape-bandcamp.js
-// usage: node scripts/scrape-bandcamp.js nixiehalcyon
-// writes: discog/<slug>.json
+// usage: node scripts/scrape-bandcamp.js <artist-slug>
+// writes: public/discog/<slug>.json
 
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
+import vm from 'vm';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
@@ -24,123 +25,120 @@ async function get(url) {
   return await res.text();
 }
 
-// Try to extract the numeric album id from an album page
-function extractAlbumId(html) {
-  // 1) From Bandcamp’s TralbumData JSON
-  //   var TralbumData = {... "current": {"id": 2616033392, ...}, ...}
-  const m1 = html.match(/TralbumData\s*=\s*({[\s\S]*?});/);
-  if (m1) {
-    try {
-      const obj = JSON.parse(m1[1]
-        // Bandcamp sometimes includes single quotes or trailing commas; clean a bit:
-        .replace(/,\s*}/g, '}')
-        .replace(/,\s*]/g, ']')
-      );
-      // Prefer current.id; fallback to id
-      const id = obj?.current?.id ?? obj?.id;
-      if (id && String(id).match(/^\d+$/)) return String(id);
-    } catch (_) {}
-  }
-  // 2) From an EmbeddedPlayer URL present in the markup
-  const m2 = html.match(/EmbeddedPlayer\/album=(\d+)\//);
-  if (m2) return m2[1];
-  return null;
-}
-
 function extractTitle($) {
   const t = $('meta[property="og:title"]').attr('content')
-       || $('h2.trackTitle').text()
-       || $('title').text();
+        || $('h2.trackTitle').first().text()
+        || $('title').text();
   return (t || '').trim();
 }
 function extractArt($) {
-  return $('meta[property="og:image"]').attr('content') || '';
+  return ($('meta[property="og:image"]').attr('content') || '').trim();
 }
-function findAlbumFromTrack($$, base) {
-  // Lots of track pages have “from <album> by …” with a link to /album/...
-  // We take the first same-host /album/ link we see in the main content.
-  let albumHref = null;
-  $$('.fromAlbum a[href^="/album/"], a[href^="/album/"]').each((_, a) => {
-    if (albumHref) return;
-    const href = $$(a).attr('href');
-    try {
-      const u = new URL(href, base);
-      albumHref = u.toString();
-    } catch(_) {}
-  });
-  return albumHref;
+
+/**
+ * Try multiple strategies to extract numeric IDs from an album/track page.
+ * Returns { albumId?: string, trackId?: string } (both optional).
+ */
+function extractIds($, html) {
+  const out = {};
+
+  // 1) Direct attributes used by Bandcamp on the page body/wrapper (most reliable)
+  //    e.g. <body data-tralbumid="2616033392" data-item-id="...">
+  const attrAlbum = $('[data-tralbumid]').attr('data-tralbumid');
+  if (attrAlbum && /^\d+$/.test(attrAlbum)) out.albumId = String(attrAlbum);
+
+  const attrTrack = $('[data-trackid]').attr('data-trackid');
+  if (attrTrack && /^\d+$/.test(attrTrack)) out.trackId = String(attrTrack);
+
+  // 2) TralbumData = {...} script block – evaluate in a safe VM and read .current.id
+  //    (Bandcamp includes plain objects here; no DOM access needed)
+  if (!out.albumId && !out.trackId) {
+    const m = html.match(/TralbumData\s*=\s*({[\s\S]*?});/);
+    if (m) {
+      try {
+        const context = {};
+        vm.createContext(context);
+        // eslint-disable-next-line no-new-func
+        const script = new vm.Script(`TralbumData = ${m[1]}; TralbumData;`);
+        const data = script.runInContext(context, { timeout: 50 });
+        const maybeId = data?.current?.id ?? data?.id;
+        if (maybeId && /^\d+$/.test(String(maybeId))) {
+          // TralbumData includes "current.type": "album" | "track"
+          const typ = (data?.current?.type || '').toLowerCase();
+          if (typ === 'album') out.albumId = String(maybeId);
+          else if (typ === 'track') out.trackId = String(maybeId);
+          else {
+            // fallback: prefer albumId when page URL contains /album/
+            out.albumId = String(maybeId);
+          }
+        }
+      } catch {}
+    }
+  }
+
+  // 3) EmbeddedPlayer hints in the markup (album= or track= in iframe URLs)
+  if (!out.albumId) {
+    const embAlbum = html.match(/EmbeddedPlayer\/album=(\d+)\//);
+    if (embAlbum) out.albumId = embAlbum[1];
+  }
+  if (!out.trackId) {
+    const embTrack = html.match(/EmbeddedPlayer\/track=(\d+)\//);
+    if (embTrack) out.trackId = embTrack[1];
+  }
+
+  return out;
 }
+
 async function scrapeArtist(slug) {
   const base = `https://${slug}.bandcamp.com`;
   const listUrl = `${base}/music`;
   const html = await get(listUrl);
   const $ = cheerio.load(html);
 
-  // Gather album/track links on the same host only (strip tracking params)
-  const host = `${slug}.bandcamp.com`;
+  // STRICT: only album links on THIS artist’s domain
   const links = new Set();
-
-  const addLink = (href) => {
+  $('.music-grid .item a[href]').each((_, a) => {
+    const href = $(a).attr('href');
     if (!href) return;
-    try {
-      const u = new URL(href, base);
-      if (u.hostname !== host) return;                // same artist subdomain only
-      if (!/^\/(album|track)\//.test(u.pathname)) return; // album or track pages only
+    const u = new URL(href, base);
+    if (u.hostname === `${slug}.bandcamp.com` && u.pathname.startsWith('/album/')) {
+      // strip tracking query params
       u.search = '';
-      u.hash = '';
-      links.add(u.toString());
-    } catch (_) {}
-  };
+      links.add(u.href);
+    }
+  });
 
-  // preferred grid
-  $('.music-grid .item a[href]').each((_, a) => addLink($(a).attr('href')));
-  // fallback scan
-  $('a[href*="/album/"], a[href*="/track/"]').each((_, a) => addLink($(a).attr('href')));
+  // Fallback: scan page for same-domain /album/ links
+  if (links.size === 0) {
+    $('a[href*="/album/"]').each((_, a) => {
+      const href = $(a).attr('href');
+      if (!href) return;
+      const u = new URL(href, base);
+      if (u.hostname === `${slug}.bandcamp.com` && u.pathname.startsWith('/album/')) {
+        u.search = '';
+        links.add(u.href);
+      }
+    });
+  }
 
   const items = [];
-  const queue = Array.from(links);  // start with discovered links
-  const seen  = new Set();          // URLs we have processed (or decided to skip)
-
-  while (queue.length) {
-    const url = queue.shift();
-    if (seen.has(url)) continue;
-    seen.add(url);
-
+  for (const url of Array.from(links)) {
     try {
-      const u = new URL(url);
-      if (u.hostname !== host) continue; // double safety
-
-      const page = await get(u.href);
-      const $$   = cheerio.load(page);
-
-      // If this is a track page and it links “from” an album, collapse into the album
-      const isTrack = /^\/track\//.test(u.pathname);
-      if (isTrack) {
-        const albumUrl = findAlbumFromTrack($$, base);
-        if (albumUrl) {
-          // collapse: enqueue the album, skip the track
-          if (!seen.has(albumUrl) && !queue.includes(albumUrl)) queue.push(albumUrl);
-          continue;
-        }
-        // Otherwise: treat as a single (keep the track page)
-      }
-
-      // Prefer albumId for embeds, but don't drop the item if missing
-      const albumId = extractAlbumId(page) || '';
-
+      const page = await get(url);
+      const $$ = cheerio.load(page);
+      const { albumId, trackId } = extractIds($$, page);
       const title = extractTitle($$) || 'untitled';
       const art   = extractArt($$);
 
-      items.push({ title, url: u.href, art, album: albumId });
+      const item = { title, url, art, album: albumId || '' };
+      if (trackId) item.track = trackId; // optional extra for singles
 
-      // be polite
-      await sleep(400);
+      items.push(item);
+      await sleep(300);
     } catch (e) {
       console.warn('album fetch failed:', url, e.message);
     }
   }
-  // sort newest first if Bandcamp exposes publish date in TralbumData (optional)
-  // items.sort(...)
 
   return { items };
 }
@@ -157,7 +155,7 @@ async function main() {
   const payload = await scrapeArtist(slug);
   const outFile = path.join(outDir, `${slug}.json`);
   await fs.writeFile(outFile, JSON.stringify(payload, null, 2));
-  console.log('wrote', outFile, `items: ${payload.items.length}`);
+  console.log(`wrote ${outFile} items: ${payload.items.length}`);
 }
 
 main().catch(err => { console.error(err); process.exit(1); });
