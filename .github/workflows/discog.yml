@@ -32,8 +32,6 @@ jobs:
       - name: Install deps
         run: npm ci --ignore-scripts --no-audit --no-fund
 
-      # IMPORTANT: run scraper for the matrix artist
-      # Make sure your scraper writes to public/discog/${slug}.json
       - name: Generate discography JSON for ${{ matrix.artist }}
         run: node scripts/scrape-bandcamp.js ${{ matrix.artist }}
 
@@ -50,14 +48,19 @@ jobs:
   deploy:
     needs: discog
     runs-on: ubuntu-latest
-    if: ${{ secrets.NEOCITIES_API_TOKEN != '' }}
+    permissions:
+      contents: read
+    env:
+      NEOCITIES_API_TOKEN: ${{ secrets.NEOCITIES_API_TOKEN }}
+
     steps:
       - name: Checkout (latest pushed content)
         uses: actions/checkout@v4
 
       - name: Deploy to Neocities
+        if: ${{ env.NEOCITIES_API_TOKEN != '' }}
         uses: bcomnes/deploy-to-neocities@v2
         with:
-          api_token: ${{ secrets.NEOCITIES_API_TOKEN }}
+          api_token: ${{ env.NEOCITIES_API_TOKEN }}
           cleanup: false
           dist_dir: public
