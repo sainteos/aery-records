@@ -114,6 +114,7 @@
     }
     @media (prefers-reduced-motion:reduce){ .crt-overlay{animation:none} }
   </style>
+  <link rel="stylesheet" href="/css/site.css">
 </head>
 
 <body class="artist-page" data-discog="nixiehalcyon">
@@ -152,8 +153,7 @@
             <div class="tag">aery records · seattle, wa</div>
             <div style="height:8px"></div>
             <div class="links">
-              <a class="pill" href="https://nixiehalcyon.bandcamp.com" target="_blank" rel="noopener">bandcamp</a>
-              <a class="pill" href="https://instagram.com/nixie.halcyon" target="_blank" rel="noopener">instagram</a>
+              <div data-socials></div>
               <a class="pill" href="#releases">discography</a>
             </div>
           </div>
@@ -223,6 +223,7 @@
   <button id="crt-toggle" type="button" title="toggle crt">crt</button>
 
   <!-- scripts -->
+  <script src="/js/socials.js" defer></script>
   <script>
     // header height → body padding (run after header exists)
     document.addEventListener('DOMContentLoaded', () => {
