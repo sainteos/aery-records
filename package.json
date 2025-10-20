@@ -3,10 +3,14 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "",
-    "discog": "node scripts/scrape-bandcamp.js"
+    "discog": "node scripts/scrape-bandcamp.js nixiehalcyon",
+    "discog:nixiehalcyon": "node scripts/scrape-bandcamp.js nixiehalcyon",
+    "discog:partyboob420": "node scripts/scrape-bandcamp.js partyboob420",
+    "discog:all": "npm run discog:nixiehalcyon && npm run discog:partyboob420"
   },
   "repository": {
     "type": "git",
@@ -15,12 +19,15 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "module",
   "bugs": {
     "url": "https://github.com/sainteos/aery-records/issues"
   },
   "homepage": "https://github.com/sainteos/aery-records#readme",
   "engines": {
     "node": ">=18"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0",
+    "node-fetch": "^3.3.2"
   }
 }

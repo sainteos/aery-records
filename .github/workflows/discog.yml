@@ -12,33 +12,36 @@ jobs:
     permissions:
       contents: write
 
-    # 👇 expose the secret as an env var for this job
     env:
       NEOCITIES_API_TOKEN: ${{ secrets.NEOCITIES_API_TOKEN }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
 
-      - name: Generate discography JSON
-        run: |
-          npm ci --ignore-scripts --no-audit --no-fund || true
-          npm run discog
+      - name: Install deps
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Generate discography JSON (all artists)
+        run: npm run discog
 
       - name: Commit changes
         run: |
           git config user.name "aery bot"
           git config user.email "bot@aeryrecords.com"
+          mkdir -p public/discog
           git add public/discog/*.json
           git diff --quiet && echo "No changes" || git commit -m "chore(discog): update $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
           git push
 
-      # ✅ use env in the condition, not secrets directly
       - name: Deploy to Neocities
         if: ${{ env.NEOCITIES_API_TOKEN != '' }}
         uses: bcomnes/deploy-to-neocities@v2

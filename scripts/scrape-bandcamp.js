@@ -1,116 +1,115 @@
 // scripts/scrape-bandcamp.js
-// Node 18+ (native fetch). If you prefer axios/cheerio, not required here.
+// usage: node scripts/scrape-bandcamp.js nixiehalcyon
+// writes: discog/<slug>.json
 
-import fs from 'node:fs/promises';
-import path from 'node:path';
+import fs from 'fs/promises';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import * as cheerio from 'cheerio';
+import fetch from 'node-fetch';
 
-const ARTISTS = [
-  { slug: 'nixiehalcyon', base: 'https://nixiehalcyon.bandcamp.com' },
-  { slug: 'partyboob420', base: 'https://partyboob420.bandcamp.com' },
-];
+const __filename = fileURLToPath(import.meta.url);
+const __dirname  = path.dirname(__filename);
 
-// ---------- helpers
-async function getText(url) {
-  const res = await fetch(url, { headers: { 'user-agent': 'aery-scraper/1.0' } });
-  if (!res.ok) throw new Error(`fetch ${url} -> ${res.status}`);
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+async function get(url) {
+  const res = await fetch(url, {
+    headers: {
+      'User-Agent': 'aery-records-discog-bot/1.0 (+https://aeryrecords.com)',
+      'Accept': 'text/html,application/xhtml+xml',
+    }
+  });
+  if (!res.ok) throw new Error(`GET ${url} → ${res.status}`);
   return await res.text();
 }
 
-// find album links on /music (best-effort; Bandcamp markup can vary)
-function parseAlbumLinksFromMusic(html, base) {
-  const links = new Set();
-
-  // common patterns
-  const regexes = [
-    /<a\s+[^>]*href="(\/album\/[^"#?]+)"[^>]*>/gi,  // /album/slug
-    /<a\s+[^>]*href="(https:\/\/[^"]+\/album\/[^"#?]+)"[^>]*>/gi
-  ];
-
-  for (const re of regexes) {
-    let m;
-    while ((m = re.exec(html)) !== null) {
-      const href = m[1].startsWith('http') ? m[1] : (base + m[1]);
-      links.add(href);
-    }
-  }
-  return Array.from(links);
-}
-
-// extract album_id + title from an album page
-function parseAlbumData(html) {
-  // 1) Try to find "album_id" explicitly
-  let m = html.match(/"album_id"\s*:\s*(\d+)/);
-  if (!m) m = html.match(/album_id\s*:\s*(\d+)/);
-  const album_id = m ? Number(m[1]) : null;
-
-  // title fallbacks: <meta property="og:title">, <title>, or JSON blobs
-  let title =
-    (html.match(/<meta\s+property="og:title"\s+content="([^"]+)"/i)?.[1]) ||
-    (html.match(/<title>([^<]+)<\/title>/i)?.[1]) ||
-    null;
-
-  if (title) {
-    // bandcamp often appends "| Artist Name" — trim that
-    title = title.replace(/\s*\|\s*[^|]+$/,'').trim();
-  }
-
-  return { album_id, title };
-}
-
-async function scrapeArtist({ slug, base }) {
-  const musicUrl = `${base}/music`;
-  const html = await getText(musicUrl);
-  const albumLinks = parseAlbumLinksFromMusic(html, base);
-
-  const out = [];
-  for (const url of albumLinks) {
+// Try to extract the numeric album id from an album page
+function extractAlbumId(html) {
+  // 1) From Bandcamp’s TralbumData JSON
+  //   var TralbumData = {... "current": {"id": 2616033392, ...}, ...}
+  const m1 = html.match(/TralbumData\s*=\s*({[\s\S]*?});/);
+  if (m1) {
     try {
-      const page = await getText(url);
-      const { album_id, title } = parseAlbumData(page);
+      const obj = JSON.parse(m1[1]
+        // Bandcamp sometimes includes single quotes or trailing commas; clean a bit:
+        .replace(/,\s*}/g, '}')
+        .replace(/,\s*]/g, ']')
+      );
+      // Prefer current.id; fallback to id
+      const id = obj?.current?.id ?? obj?.id;
+      if (id && String(id).match(/^\d+$/)) return String(id);
+    } catch (_) {}
+  }
+  // 2) From an EmbeddedPlayer URL present in the markup
+  const m2 = html.match(/EmbeddedPlayer\/album=(\d+)\//);
+  if (m2) return m2[1];
+  return null;
+}
 
-      if (!album_id) {
-        console.warn(`[warn] no album_id for ${url}`);
-        continue;
-      }
+function extractTitle($) {
+  const t = $('meta[property="og:title"]').attr('content')
+       || $('h2.trackTitle').text()
+       || $('title').text();
+  return (t || '').trim();
+}
+function extractArt($) {
+  return $('meta[property="og:image"]').attr('content') || '';
+}
 
-      // optional: try to get cover image (og:image)
-      const art =
-        page.match(/<meta\s+property="og:image"\s+content="([^"]+)"/i)?.[1] || null;
+async function scrapeArtist(slug) {
+  const base = `https://${slug}.bandcamp.com`;
+  const listUrl = `${base}/music`;
+  const html = await get(listUrl);
+  const $ = cheerio.load(html);
 
-      out.push({
-        url,
-        title: title || 'untitled',
-        album: album_id,
-        art
-      });
-    } catch (err) {
-      console.warn(`[warn] failed ${url}: ${err.message}`);
-    }
+  // Gather album links from the grid; fallback to any /album/ link
+  const links = new Set();
+  $('.music-grid .item a[href*="/album/"]').each((_, a) => {
+    const href = $(a).attr('href');
+    if (href) links.add(new URL(href, base).href);
+  });
+  if (links.size === 0) {
+    $('a[href*="/album/"]').each((_, a) => {
+      const href = $(a).attr('href');
+      if (href) links.add(new URL(href, base).href);
+    });
   }
 
-  // sort newest-ish first by guessing from URL order
-  // (Bandcamp /music is usually newest first; keep order)
-  return out;
+  const items = [];
+  for (const url of Array.from(links)) {
+    try {
+      const page = await get(url);
+      const $$ = cheerio.load(page);
+      const albumId = extractAlbumId(page);
+      const title   = extractTitle($$) || 'untitled';
+      const art     = extractArt($$);
+      items.push({ title, url, art, album: albumId || '' });
+      // be polite
+      await sleep(400);
+    } catch (e) {
+      console.warn('album fetch failed:', url, e.message);
+    }
+  }
+  // sort newest first if Bandcamp exposes publish date in TralbumData (optional)
+  // items.sort(...)
+
+  return { items };
 }
 
 async function main() {
-  const outDir = path.join(process.cwd(), 'public', 'discog');
+  const slug = (process.argv[2] || '').trim().toLowerCase();
+  if (!slug) {
+    console.error('usage: node scripts/scrape-bandcamp.js <artist-slug>');
+    process.exit(1);
+  }
+  const outDir = path.resolve(__dirname, '..', 'public', 'discog');
   await fs.mkdir(outDir, { recursive: true });
 
-  for (const artist of ARTISTS) {
-    const items = await scrapeArtist(artist);
-    const payload = {
-      artist: artist.slug,
-      updated: new Date().toISOString(),
-      items
-    };
-    const file = path.join(outDir, `${artist.slug}.json`);
-    await fs.writeFile(file, JSON.stringify(payload, null, 2), 'utf8');
-    console.log(`[ok] wrote ${file} (${items.length} items)`);
-  }
+  const payload = await scrapeArtist(slug);
+  const outFile = path.join(outDir, `${slug}.json`);
+  await fs.writeFile(outFile, JSON.stringify(payload, null, 2));
+  console.log('wrote', outFile, `items: ${payload.items.length}`);
 }
 
-main().catch(err => {
-  console.error(err);
-  process.exit(1);
-});
+main().catch(err => { console.error(err); process.exit(1); });
