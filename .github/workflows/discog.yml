@@ -35,14 +35,31 @@ jobs:
       - name: Generate discography JSON for ${{ matrix.artist }}
         run: node scripts/scrape-bandcamp.js ${{ matrix.artist }}
 
-      - name: Commit changes for ${{ matrix.artist }}
+      - name: Commit & push changes for ${{ matrix.artist }}
         run: |
+          set -e
           git config user.name "aery bot"
           git config user.email "bot@aeryrecords.com"
           mkdir -p public/discog
           git add public/discog/${{ matrix.artist }}.json
-          git diff --cached --quiet && echo "No changes for ${{ matrix.artist }}" || git commit -m "discog: ${{ matrix.artist }} $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
-          git push
+
+          # only commit if there are staged changes
+          if git diff --cached --quiet; then
+            echo "No changes for ${{ matrix.artist }}"
+          else
+            git commit -m "discog: ${{ matrix.artist }} $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+
+            # rebase onto latest remote main to avoid non-fast-forward
+            git fetch origin main
+            git pull --rebase origin main
+
+            # push with a tiny retry in case of a very rare race
+            git push origin HEAD:main || { 
+              echo "Push failed, retrying once after rebase…"
+              git pull --rebase origin main
+              git push origin HEAD:main
+            }
+          fi
 
   # 2) deploy once after all artists have been processed
   deploy:
