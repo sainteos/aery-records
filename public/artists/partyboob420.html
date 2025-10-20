@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>aery records — 파티 가슴 (420)ＰＡＲＴＹＢＯＯＢ</title>
+  <meta name="description" content="aery records — artist page" />
+  <link rel="preconnect" href="https://unpkg.com" />
+  <style>
+    :root{
+      --bg1:#f7d9ff; --bg2:#b8e6ff;
+      --glassA:rgba(255,255,255,.88); --glassB:rgba(255,255,255,.74);
+      --glass-stroke:rgba(255,255,255,.95);
+      --ink:#222325; --ink-muted:#4a4c50;
+      --accent:#ff7ab6; --accent-2:#7af0e0; --accent-3:#ffd36e;
+    }
+    *{box-sizing:border-box} html,body{height:100%}
+    body{
+      margin:0; color:var(--ink);
+      font-family:ui-rounded,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif;
+      background:linear-gradient(180deg,var(--bg1),var(--bg2)) fixed;
+      text-transform:lowercase; overflow-x:hidden;
+      padding-top: var(--header-h, 64px);
+    }
+    .wrap{max-width:1100px;margin:0 auto;padding:16px 20px}
+    .row{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+    .pill{display:inline-block;padding:8px 14px;border-radius:999px;background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#111;font-weight:800;text-decoration:none;border:1px solid rgba(255,255,255,.6);box-shadow:0 6px 18px rgba(0,0,0,.1)}
+    header.site{
+      position: fixed; top: 0; left: 0; right: 0; z-index: 10010;
+      backdrop-filter: blur(10px) saturate(140%);
+      background: linear-gradient(90deg, rgba(255,255,255,.8), rgba(255,255,255,.55));
+      border-bottom: 1px solid rgba(255,255,255,.95);
+      will-change: transform; transform: translateZ(0);
+    }
+    .brand{display:flex;gap:12px;align-items:center;font-weight:700;letter-spacing:.5px}
+    .dot{width:10px;height:10px;border-radius:999px;background:linear-gradient(135deg,var(--accent),var(--accent-2));box-shadow:0 0 14px var(--accent)}
+    nav a{color:var(--ink);text-decoration:none;margin-right:18px;font-weight:600;opacity:.9}
+    nav a:hover{text-decoration:underline;opacity:1}
+
+    .hero{position:relative;min-height:40vh;display:grid;place-items:center;padding:48px 20px 24px}
+    .hero-copy{position:relative;z-index:2;text-align:center;max-width:820px;background:linear-gradient(180deg,var(--glassA),var(--glassB));border:1px solid var(--glass-stroke);border-radius:24px;padding:24px 22px;box-shadow:0 20px 40px rgba(0,0,0,.08)}
+    h1{margin:0 0 6px;font-size:clamp(28px,5vw,56px);line-height:1.02}
+    .tag{color:var(--ink-muted)}
+
+    section{position:relative;z-index:2}
+    .panel{background:linear-gradient(180deg,var(--glassA),var(--glassB));border:1px solid var(--glass-stroke);border-radius:24px;padding:24px;margin:40px 20px;box-shadow:0 20px 40px rgba(0,0,0,.06)}
+    .kicker{color:var(--accent);font-weight:700;letter-spacing:.08em;font-size:12px;text-transform:uppercase}
+    h2{margin:6px 0 14px;font-size:clamp(22px,3vw,34px)}
+    .muted{color:var(--ink-muted)}
+
+    .artist-header{display:grid;grid-template-columns:120px 1fr;gap:16px;align-items:center}
+    .artist-pic{width:120px;height:120px;border-radius:18px;object-fit:cover;box-shadow:0 10px 20px rgba(0,0,0,.08);border:1px solid var(--glass-stroke)}
+    @media (max-width:600px){ .artist-header{grid-template-columns:1fr} .artist-pic{justify-self:center} }
+
+    .artist-page section, .artist-page .panel {
+      max-width: 900px; margin: 0 auto; text-align: center; margin-bottom: 2rem;
+    }
+
+    .two-col{display:grid;grid-template-columns:1.1fr .9fr;gap:18px}
+    @media (max-width:900px){ .two-col{grid-template-columns:1fr} }
+
+    .embed{
+      aspect-ratio: 1.4 / 1; width: 100%; max-width: 720px; border: 0; border-radius: 12px;
+      display:block; margin:0 auto; background:#eee;
+    }
+    .links{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+    .discog{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+    .release{background:rgba(255,255,255,.9);border:1px solid var(--glass-stroke);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:8px}
+    .release img{width:100%;height:auto;border-radius:12px;box-shadow:0 10px 20px rgba(0,0,0,.08)}
+
+    footer.site{color:var(--ink-muted);text-align:center;padding:56px 10px 40px}
+
+    /* CRT overlay */
+    :root{ --crt-scan:.14; --crt-mask:.06; --crt-vignette:.18; }
+    #site-wrap { filter: none; }
+    .crt-overlay{
+      position:fixed; inset:0; pointer-events:none; z-index:10050; mix-blend-mode:multiply;
+      background-image:
+        repeating-linear-gradient(to bottom, rgba(0,0,0,var(--crt-scan)) 0 2px, rgba(0,0,0,0) 2px 4px),
+        repeating-linear-gradient(to right, rgba(255,0,0,var(--crt-mask)) 0 1px, rgba(0,255,0,var(--crt-mask)) 1px 2px, rgba(0,0,255,var(--crt-mask)) 2px 3px),
+        radial-gradient(ellipse at center, rgba(0,0,0,0) 55%, rgba(0,0,0,var(--crt-vignette)) 100%);
+      background-size:100% 4px, 3px 100%, 100% 100%;
+      animation: crt-flicker 4s ease-in-out infinite;
+    }
+    @keyframes crt-flicker { 0%,100%{opacity:1} 50%{opacity:.97} }
+    .crt-bezel{
+      position:fixed; inset:0; pointer-events:none; z-index:10040; border-radius:18px;
+      box-shadow: inset 0 0 120px rgba(0,0,0,.55), inset 0 0 24px rgba(0,0,0,.35), 0 0 0 2px rgba(0,0,0,.25);
+      background:
+        radial-gradient(120% 80% at 0% 0%, rgba(255,255,255,.18), rgba(255,255,255,0) 60%),
+        radial-gradient(80% 100% at 100% 100%, rgba(255,255,255,.05), rgba(255,255,255,0) 60%);
+      mix-blend-mode:multiply;
+    }
+    #crt-toggle{
+      position:fixed; right:8px; bottom:8px; z-index:9999;
+      font:12px/1 ui-monospace,monospace; padding:6px 10px;
+      border-radius:8px; border:1px solid rgba(0,0,0,.1);
+      background:linear-gradient(180deg, rgba(255,255,255,.8), rgba(255,255,255,.6));
+      cursor:pointer;
+    }
+    @media (prefers-reduced-motion:reduce){ .crt-overlay{animation:none} }
+  </style>
+</head>
+
+<body class="artist-page" data-discog="partyboob420">
+  <!-- gentle warp filter def (kept for consistency, though not applied here) -->
+  <svg width="0" height="0" style="position:absolute">
+    <defs>
+      <filter id="crt-warp">
+        <feTurbulence type="fractalNoise" baseFrequency="0.0015" numOctaves="1" seed="8" result="noise"/>
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="6" xChannelSelector="R" yChannelSelector="G"/>
+      </filter>
+    </defs>
+  </svg>
+
+  <header class="site">
+    <div class="wrap row" style="justify-content:space-between;">
+      <div class="brand"><span class="dot"></span><span>aery records</span></div>
+      <nav>
+        <a href="/">home</a>
+        <a href="/#releases">releases</a>
+        <a href="/#lineup">lineup</a>
+        <a href="/#news">news</a>
+        <a href="/#about">about</a>
+        <a href="/studio">studio</a>
+      </nav>
+    </div>
+  </header>
+
+  <div id="site-wrap">
+    <!-- HERO -->
+    <section class="hero">
+      <div class="hero-copy">
+        <div class="artist-header">
+          <img class="artist-pic" src="https://picsum.photos/seed/partyboob/320/320" alt="artist photo" />
+          <div>
+            <h1>파티 가슴 (420)ＰＡＲＴＹＢＯＯＢ</h1>
+            <div class="tag">aery records · seattle, wa</div>
+            <div style="height:8px"></div>
+            <div class="links">
+              <a class="pill" href="https://partyboob420.bandcamp.com" target="_blank" rel="noopener">bandcamp</a>
+              <a class="pill" href="https://instagram.com/" target="_blank" rel="noopener">instagram</a>
+              <a class="pill" href="#releases">discography</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FEATURED + BIO -->
+    <section class="panel wrap">
+      <div class="two-col">
+        <div>
+          <div class="kicker">featured</div>
+          <h2>latest release</h2>
+          <!-- auto-filled by script: prefers an item with album id, else shows a button -->
+          <div id="featured-embed"></div>
+        </div>
+        <div>
+          <div class="kicker">bio</div>
+          <p>short artist bio goes here — influences, vibe, highlights, collaborators. keep it tight and lowercase for brand cohesion.</p>
+          <p class="muted">for booking/press: <a href="mailto:aeryrecords@example.com">aeryrecords@example.com</a></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- DISCOGRAPHY -->
+    <section class="panel wrap">
+      <div class="kicker" id="releases">releases</div>
+      <h2>discography</h2>
+      <div id="discog" class="discog"></div>
+    </section>
+
+    <!-- CONTACT -->
+    <section class="panel wrap">
+      <div class="kicker">contact</div>
+      <h2>booking / press</h2>
+      <form class="contact-form" action="https://formspree.io/f/xldwqqpo" method="POST">
+        <label><span>name</span>
+          <input type="text" name="name" placeholder="your name" required />
+        </label>
+        <label><span>email</span>
+          <input type="email" name="email" placeholder="your@email" required />
+        </label>
+        <label><span>message</span>
+          <textarea name="message" rows="5" placeholder="dates, venue, details" required></textarea>
+        </label>
+        <div class="actions">
+          <button type="submit">send</button>
+          <span id="status" aria-live="polite"></span>
+        </div>
+        <input type="hidden" name="artist" value="파티 가슴 (420)ＰＡＲＴＹＢＯＯＢ" />
+        <input type="text" name="_gotcha" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px;opacity:0" aria-hidden="true" />
+      </form>
+    </section>
+
+    <footer class="site">
+      <div>© <span id="year"></span> aery records — all love.</div>
+    </footer>
+  </div>
+
+  <!-- CRT overlays -->
+  <div class="crt-overlay" aria-hidden="true"></div>
+  <div class="crt-bezel" aria-hidden="true"></div>
+  <button id="crt-toggle" type="button" title="toggle crt">crt</button>
+
+  <!-- scripts -->
+  <script>
+    // header height → body padding
+    document.addEventListener('DOMContentLoaded', () => {
+      const hdr = document.querySelector('header.site');
+      if (!hdr) return;
+      const set = () => document.documentElement.style.setProperty('--header-h', hdr.offsetHeight + 'px');
+      set(); new ResizeObserver(set).observe(hdr); window.addEventListener('resize', set);
+    });
+
+    // year
+    document.addEventListener('DOMContentLoaded',()=>{ const y=document.getElementById('year'); if(y) y.textContent=new Date().getFullYear(); });
+
+    // formspree ajax status
+    (function(){
+      const form=document.querySelector('form.contact-form'); const status=document.getElementById('status');
+      if(!form||!status) return;
+      form.addEventListener('submit',async(e)=>{
+        e.preventDefault(); status.className=''; status.textContent='sending…';
+        try{
+          const res=await fetch(form.action,{method:form.method,body:new FormData(form),headers:{Accept:'application/json'}});
+          if(res.ok){ form.reset(); status.className='ok'; status.textContent='got it — we’ll be in touch ✨'; }
+          else{ status.className='err'; status.textContent='something went wrong'; }
+        }catch(_){ status.className='err'; status.textContent='network hiccup — try again?'; }
+      });
+    })();
+
+    // crt toggle (persist across visits)
+    (function(){
+      const key='aery-crt';
+      if(localStorage.getItem(key)==='on') document.body.classList.add('crt-on');
+      const btn=document.getElementById('crt-toggle'); if(!btn) return;
+      const set = () => { btn.textContent = document.body.classList.contains('crt-on') ? 'crt ✓' : 'crt'; };
+      btn.addEventListener('click',()=>{
+        document.body.classList.toggle('crt-on');
+        localStorage.setItem(key, document.body.classList.contains('crt-on')?'on':'off');
+        set();
+      });
+      set();
+    })();
+
+    // === discography loader (+ featured auto-fill) ===
+    document.addEventListener('DOMContentLoaded', async () => {
+      const slot = document.getElementById('discog');
+      const featured = document.getElementById('featured-embed');
+      if (!slot) return;
+
+      const DEBUG = /[?&]debug=1\b/.test(location.search);
+      let chip;
+      if (DEBUG) {
+        chip = document.createElement('div');
+        Object.assign(chip.style, {
+          position:'fixed', right:'8px', bottom:'8px', zIndex: 99999,
+          background:'rgba(0,0,0,.7)', color:'#fff', padding:'6px 10px',
+          font:'12px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace',
+          borderRadius:'8px'
+        });
+        chip.textContent = 'discog: booting…';
+        document.body.appendChild(chip);
+      }
+
+      const bodySlug = (document.body.dataset.discog || '').trim().toLowerCase().replace(/[^a-z0-9]/gi,'');
+      const jsonUrl = `/discog/${bodySlug}.json`;
+      if (DEBUG && chip) chip.textContent = `discog: fetching ${jsonUrl}`;
+
+      let data;
+      try {
+        const res = await fetch(jsonUrl, { cache:'no-store' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        data = await res.json();
+      } catch (err) {
+        if (DEBUG && chip) chip.textContent = `discog: ${err.message}`;
+        slot.textContent = 'discography unavailable right now';
+        if (featured) featured.innerHTML = `<a class="pill" href="https://${bodySlug}.bandcamp.com" target="_blank" rel="noopener">listen on bandcamp</a>`;
+        return;
+      }
+
+      const items = Array.isArray(data.items) ? data.items : [];
+      if (DEBUG && chip) chip.textContent = `discog: ${items.length} items`;
+
+      // FEATURED: prefer first item with album id; else show button
+      if (featured) {
+        const withEmbed = items.find(it => it.album);
+        if (withEmbed) {
+          featured.innerHTML = `
+            <iframe class="embed" loading="lazy"
+              title="bandcamp — ${withEmbed.title ? withEmbed.title.replace(/"/g,'&quot;') : ''}"
+              src="https://bandcamp.com/EmbeddedPlayer/album=${withEmbed.album}/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=false/transparent=true/">
+            </iframe>`;
+        } else {
+          featured.innerHTML = `<a class="pill" href="https://${bodySlug}.bandcamp.com" target="_blank" rel="noopener">listen on bandcamp</a>`;
+        }
+      }
+
+      slot.classList.add('discog');
+      if (!items.length) {
+        slot.innerHTML = '<div class="muted">no releases found yet</div>';
+        return;
+      }
+
+      const frag = document.createDocumentFragment();
+      for (const it of items) {
+        const card = document.createElement('a');
+        card.className = 'release';
+        card.href = it.url || '#';
+        card.target = '_blank';
+        card.rel = 'noopener';
+
+        if (it.art) {
+          const img = document.createElement('img');
+          img.src = it.art;
+          img.alt = it.title || 'artwork';
+          card.appendChild(img);
+        }
+
+        const title = document.createElement('div');
+        title.innerHTML = `<b>${(it.title || 'untitled')}</b>`;
+        card.appendChild(title);
+
+        if (it.album) {
+          const iframe = document.createElement('iframe');
+          iframe.className = 'embed';
+          iframe.loading = 'lazy';
+          iframe.title = `bandcamp: ${it.title || ''}`;
+          iframe.src = `https://bandcamp.com/EmbeddedPlayer/album=${it.album}/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=false/transparent=true/`;
+          card.appendChild(iframe);
+        }
+
+        frag.appendChild(card);
+      }
+
+      slot.textContent = '';
+      slot.appendChild(frag);
+    });
+  </script>
+</body>
+</html>
