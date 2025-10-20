@@ -316,43 +316,54 @@
         slot.innerHTML = '<div class="muted">no releases found yet</div>';
         return;
       }
-
       const frag = document.createDocumentFragment();
+
       for (const it of items) {
-        const card = document.createElement('a');
-        card.className = 'release';
-        card.href = it.url || '#';
-        card.target = '_blank';
-        card.rel = 'noopener';
+        const canEmbedAlbum = it.album && /^\d+$/.test(it.album);
+        const canEmbedTrack = it.track && /^\d+$/.test(it.track);
 
-        if (it.art) {
-          const img = document.createElement('img');
-          img.src = it.art;
-          img.alt = it.title || 'artwork';
-          card.appendChild(img);
-        }
+        if (canEmbedAlbum || canEmbedTrack) {
+          // ➜ EMBED-ONLY CARD
+          const card = document.createElement('div');
+          card.className = 'release';
 
-        const title = document.createElement('div');
-        title.innerHTML = `<b>${it.title || 'untitled'}</b>`;
-        card.appendChild(title);
-
-        if (it.album) {
           const iframe = document.createElement('iframe');
           iframe.className = 'embed';
           iframe.loading = 'lazy';
+          iframe.allow = 'autoplay; encrypted-media';
           iframe.title = `bandcamp: ${it.title || ''}`;
-          iframe.src = `https://bandcamp.com/EmbeddedPlayer/album=${it.album}/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=false/transparent=true/`;
+          iframe.src = canEmbedAlbum
+            ? `https://bandcamp.com/EmbeddedPlayer/album=${it.album}/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=false/transparent=true/`
+            : `https://bandcamp.com/EmbeddedPlayer/track=${it.track}/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=false/transparent=true/`;
           card.appendChild(iframe);
-        } else if (it.track) {
-          const iframe = document.createElement('iframe');
-          iframe.className = 'embed';
-          iframe.loading = 'lazy';
-          iframe.title = `bandcamp: ${it.title || ''}`;
-          iframe.src = `https://bandcamp.com/EmbeddedPlayer/track=${it.track}/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=false/transparent=true/`;
-          card.appendChild(iframe);
-        }
 
-        frag.appendChild(card);
+          // small caption link (optional)
+          const title = document.createElement('div');
+          title.innerHTML = `<b><a href="${it.url || '#'}" target="_blank" rel="noopener">${it.title || 'untitled'}</a></b>`;
+          card.appendChild(title);
+
+          frag.appendChild(card);
+        } else {
+          // ➜ FALLBACK: ARTWORK + LINK ONLY (no embed available)
+          const card = document.createElement('a');
+          card.className = 'release';
+          card.href = it.url || '#';
+          card.target = '_blank';
+          card.rel = 'noopener';
+
+          if (it.art) {
+            const img = document.createElement('img');
+            img.src = it.art;
+            img.alt = it.title || 'artwork';
+            card.appendChild(img);
+          }
+
+          const title = document.createElement('div');
+          title.innerHTML = `<b>${it.title || 'untitled'}</b>`;
+          card.appendChild(title);
+
+          frag.appendChild(card);
+        }
       }
 
       slot.textContent = '';
