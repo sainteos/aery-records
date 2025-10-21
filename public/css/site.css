@@ -57,6 +57,7 @@ body{
 .wrap-tight{ max-width:var(--max-wrap); margin:0 auto; padding:0 20px; }
 .row{ display:flex; flex-wrap:wrap; align-items:center; gap:12px; }
 .spacer{ height:8px; }
+#site-wrap { position: relative; z-index: 2; }
 
 /* ---------- Header / Nav ---------- */
 header.site{
