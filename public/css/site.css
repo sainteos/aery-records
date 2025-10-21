@@ -235,43 +235,63 @@ footer.site{ color:var(--ink-muted); text-align:center; padding:56px 10px 40px; 
 .socials a.mail{color:#444}
 .socials a.tt{color:#000}
 
-/* ---------- CRT overlays ---------- */
-/* By default, show overlays only when body has .crt-on */
-.crt-overlay, .crt-bezel{ display:none; }
+/* ===== CRT overlay (scanlines + mask + slight warp) ===== */
+:root{
+  --crt-scan: .14;
+  --crt-mask: .06;
+  --crt-vignette: .18;
+}
+
+/* default: off (hidden) */
+.crt-overlay,
+.crt-bezel { display: none; }
+
+/* turn ON when body has .crt-on (toggled by your JS) */
 body.crt-on .crt-overlay,
-body.crt-on .crt-bezel{ display:block; }
+body.crt-on .crt-bezel { display: block; }
 
-#site-wrap{ filter: none; }
-body.crt-on #site-wrap{ filter: url(#crt-warp) contrast(1.06) saturate(1.08); }
+body.crt-on #site-wrap {
+  /* gentle warp & punch */
+  filter: url(#crt-warp) contrast(1.06) saturate(1.08);
+}
 
+/* scanlines + shadow mask + vignette */
 .crt-overlay{
-  position:fixed; inset:0; pointer-events:none; z-index:10050; mix-blend-mode:multiply;
+  position: fixed; inset: 0; pointer-events: none;
+  z-index: 10050; mix-blend-mode: multiply;
   background-image:
-    repeating-linear-gradient(to bottom, rgba(0,0,0,var(--crt-scan)) 0 2px, rgba(0,0,0,0) 2px 4px),
-    repeating-linear-gradient(to right, rgba(255,0,0,var(--crt-mask)) 0 1px, rgba(0,255,0,var(--crt-mask)) 1px 2px, rgba(0,0,255,var(--crt-mask)) 2px 3px),
-    radial-gradient(ellipse at center, rgba(0,0,0,0) 55%, rgba(0,0,0,var(--crt-vignette)) 100%);
-  background-size:100% 4px, 3px 100%, 100% 100%;
+    repeating-linear-gradient(to bottom,
+      rgba(0,0,0,var(--crt-scan)) 0 2px, rgba(0,0,0,0) 2px 4px),
+    repeating-linear-gradient(to right,
+      rgba(255,0,0,var(--crt-mask)) 0 1px,
+      rgba(0,255,0,var(--crt-mask)) 1px 2px,
+      rgba(0,0,255,var(--crt-mask)) 2px 3px),
+    radial-gradient(ellipse at center,
+      rgba(0,0,0,0) 55%, rgba(0,0,0,var(--crt-vignette)) 100%);
+  background-size: 100% 4px, 3px 100%, 100% 100%;
   animation: crt-flicker 4s ease-in-out infinite;
 }
-@keyframes crt-flicker{ 0%,100%{opacity:1} 50%{opacity:.97} }
+@keyframes crt-flicker { 0%,100%{opacity:1} 50%{opacity:.97} }
+
 .crt-bezel{
-  position:fixed; inset:0; pointer-events:none; z-index:10040; border-radius:18px;
-  box-shadow: inset 0 0 120px rgba(0,0,0,.55), inset 0 0 24px rgba(0,0,0,.35), 0 0 0 2px rgba(0,0,0,.25);
+  position: fixed; inset: 0; pointer-events: none;
+  z-index: 10040; border-radius: 18px;
+  box-shadow:
+    inset 0 0 120px rgba(0,0,0,.55),
+    inset 0 0 24px rgba(0,0,0,.35),
+    0 0 0 2px rgba(0,0,0,.25);
   background:
     radial-gradient(120% 80% at 0% 0%, rgba(255,255,255,.18), rgba(255,255,255,0) 60%),
     radial-gradient(80% 100% at 100% 100%, rgba(255,255,255,.05), rgba(255,255,255,0) 60%);
-  mix-blend-mode:multiply;
+  mix-blend-mode: multiply;
 }
 
-/* CRT toggle button (optional) */
+/* the little toggle chip (optional) */
 #crt-toggle{
-  position:fixed; right:8px; bottom:8px; z-index:9999;
-  font:12px/1 ui-monospace,monospace; padding:6px 10px;
-  border-radius:8px; border:1px solid rgba(0,0,0,.1);
-  background:linear-gradient(180deg, rgba(255,255,255,.8), rgba(255,255,255,.6));
-  cursor:pointer;
+  position: fixed; right: 8px; bottom: 8px; z-index: 9999;
+  font: 12px/1 ui-monospace,monospace; padding: 6px 10px;
+  border-radius: 8px; border: 1px solid rgba(0,0,0,.1);
+  background: linear-gradient(180deg, rgba(255,255,255,.8), rgba(255,255,255,.6));
+  cursor: pointer;
 }
-
-@media (prefers-reduced-motion:reduce){
-  .crt-overlay{ animation:none; }
-}
+@media (prefers-reduced-motion:reduce){ .crt-overlay{ animation: none; } }
