@@ -569,13 +569,15 @@
               layoutObjects();
 
               function resize() {
-                const rect = canvas.getBoundingClientRect();
-                const w = rect.width  || window.innerWidth;
-                const h = rect.height || Math.max(520, window.innerHeight * 0.72);
+                const w = Math.floor(window.innerWidth);
+                const h = Math.floor(window.innerHeight);
+
                 renderer.setSize(w, h, false);
                 canvas.width  = Math.floor(w * DPR);
                 canvas.height = Math.floor(h * DPR);
+
                 camera.aspect = w / h;
+                camera.updateProjectionMatrix();
                 camera.updateProjectionMatrix();
 
                 // clamp positions into the new arena
