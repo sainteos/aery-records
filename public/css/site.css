@@ -357,3 +357,68 @@ body:not(.artist-page) .hero-copy {
 
 /* If that section had center text that made things look “lefty”, undo it */
 #pick-your-path .grid-cards { text-align: initial; }
+
+/* Pricing grid polish */
+.pricing.grid-cards {
+  gap: 22px;
+}
+
+/* Individual price cards */
+.price.card {
+  background: linear-gradient(180deg, var(--glassA), var(--glassB));
+  border: 1px solid var(--glass-stroke);
+  border-radius: 18px;
+  padding: 18px 16px;
+  box-shadow: 0 10px 22px rgba(0,0,0,.06);
+  display: flex;              /* lets CTA stick to bottom */
+  flex-direction: column;
+  text-align: left;           /* content reads like a card, not centered */
+}
+
+/* Top label */
+.price .name {
+  font-weight: 800;
+  font-size: clamp(18px, 2.2vw, 22px);
+  letter-spacing: .2px;
+  margin-bottom: 2px;
+}
+
+/* Sub label under name */
+.price .muted {
+  color: var(--ink-muted);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+/* Big price row */
+.price .cost {
+  font-weight: 800;
+  font-size: clamp(28px, 4vw, 36px);
+  line-height: 1;
+  margin: 8px 0 12px;
+}
+.price .cost .unit {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink-muted);
+  margin-left: 4px;
+}
+
+/* Feature list */
+.price ul {
+  margin: 0 0 14px 18px;
+  padding: 0;
+}
+.price ul li {
+  margin: 6px 0;
+}
+
+/* CTA pinned to bottom edge of the card */
+.price .cta { margin-top: auto; }
+
+/* Make pills fill on hover for emphasis */
+.price .pill {
+  display: inline-block;
+  text-align: center;
+  white-space: nowrap;
+}
