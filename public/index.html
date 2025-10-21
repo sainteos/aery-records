@@ -184,7 +184,7 @@
 
               // elements where we DON'T orbit if the event starts on them
               const isUI = (el) =>
-                el.closest('header.site, nav, .panel, .card, a, button, input, textarea, select, details, summary, iframe, [data-no-orbit]');
+                el.closest('header.site, nav, .panel, .card, .hero, .hero-copy, a, button, input, textarea, select, details, summary, iframe, [data-no-orbit]');
 
               // mouse
               window.addEventListener('mousedown', (e) => {
