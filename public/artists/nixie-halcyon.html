@@ -274,5 +274,23 @@
       slot.appendChild(frag);
     });
   </script>
+  <div class="crt-overlay" aria-hidden="true"></div>
+  <div class="crt-bezel" aria-hidden="true"></div>
+  <button id="crt-toggle" type="button" title="toggle crt">crt</button>
+  <script>
+    (function(){
+      const key='aery-crt';
+      if(localStorage.getItem(key)==='on') document.body.classList.add('crt-on');
+      const btn=document.getElementById('crt-toggle');
+      if(!btn) return;
+      const set=()=>{btn.textContent=document.body.classList.contains('crt-on')?'crt ✓':'crt';};
+      btn.addEventListener('click',()=>{
+        document.body.classList.toggle('crt-on');
+        localStorage.setItem(key, document.body.classList.contains('crt-on')?'on':'off');
+        set();
+      });
+      set();
+    })();
+  </script>
 </body>
 </html>
