@@ -336,3 +336,24 @@ body:not(.artist-page) .hero-copy {
   margin-left: auto;
   margin-right: auto;
 }
+/* Reusable cards grid (great for pricing/paths) */
+.grid-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 18px;
+  align-items: stretch;
+}
+
+/* Optional polish for the cards inside */
+.grid-cards .card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.grid-cards .card .actions {    /* place buttons at the bottom */
+  margin-top: auto;
+}
+
+/* If that section had center text that made things look “lefty”, undo it */
+#pick-your-path .grid-cards { text-align: initial; }
