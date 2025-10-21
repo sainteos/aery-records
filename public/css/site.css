@@ -317,3 +317,22 @@ section, .panel { text-align: initial; }
 .hero-copy { max-width: 820px; }
 .artist-page section,
 .artist-page .panel { max-width: 900px; }
+/* Center panels and wrappers on non-artist pages, too */
+body:not(.artist-page) .panel { 
+  max-width: 1100px; 
+  margin: 40px auto;        /* vertical spacing + centered horizontally */
+}
+
+body:not(.artist-page) .wrap,
+body:not(.artist-page) .wrap-tight {
+  max-width: 1100px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Ensure hero copy on non-artist pages also centers as a block */
+body:not(.artist-page) .hero-copy {
+  max-width: 820px;
+  margin-left: auto;
+  margin-right: auto;
+}
