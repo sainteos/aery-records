@@ -400,12 +400,9 @@
   <body>
     <svg width="0" height="0" style="position:absolute">
       <defs>
-        <!-- soft barrel distortion -->
         <filter id="crt-warp">
-          <!-- a very gentle noise field -->
           <feTurbulence type="fractalNoise" baseFrequency="0.0015" numOctaves="1" seed="8" result="noise"/>
-          <!-- keep the warp stable but a little alive -->
-          <feDisplacementMap in="SourceGraphic" in2="noise" scale="12" xChannelSelector="R" yChannelSelector="G"/>
+          <feDisplacementMap in="SourceGraphic" in2="noise" scale="6" xChannelSelector="R" yChannelSelector="G"/>
         </filter>
       </defs>
     </svg>
@@ -560,7 +557,17 @@
       </section>
       <footer class="site">
         <div>© <span id="year"></span> aery records — all love.</div>
-
+        <script>
+          // Apply saved CRT state immediately (no flash)
+          (function () {
+            try {
+              if (localStorage.getItem('aery-crt') === 'on') {
+                document.documentElement.classList.add('crt-ready');
+                document.body.classList.add('crt-on');
+              }
+            } catch (_) {}
+          })();
+        </script>
         <!-- three.js -->
         <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/geometries/TeapotGeometry.js"></script>

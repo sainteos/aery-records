@@ -107,10 +107,21 @@
 
   <!-- CRT overlays -->
   <div class="crt-overlay" aria-hidden="true"></div>
-  <div class="crt-bezel" aria-hidden="true"></div>
-  <button id="crt-toggle" type="button" title="toggle crt">crt</button>
+  <div class="crt-bezel"   aria-hidden="true"></div>
+  <button id="crt-toggle" type="button">crt</button>
 
   <!-- scripts -->
+  <script>
+    // Apply saved CRT state immediately (no flash)
+    (function () {
+      try {
+        if (localStorage.getItem('aery-crt') === 'on') {
+          document.documentElement.classList.add('crt-ready');
+          document.body.classList.add('crt-on');
+        }
+      } catch (_) {}
+    })();
+  </script>
   <script src="/js/socials.js" defer></script>
   <script>
     // header height → body padding

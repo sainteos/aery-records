@@ -237,6 +237,17 @@
       <div>© <span id="year">2025</span> aery records — all love.</div>
     </footer>
   </div>
+  <script>
+    // Apply saved CRT state immediately (no flash)
+    (function () {
+      try {
+        if (localStorage.getItem('aery-crt') === 'on') {
+          document.documentElement.classList.add('crt-ready');
+          document.body.classList.add('crt-on');
+        }
+      } catch (_) {}
+    })();
+  </script>
   <!-- tiny helpers -->
   <script>
     // year

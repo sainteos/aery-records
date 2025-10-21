@@ -295,3 +295,25 @@ body.crt-on #site-wrap {
   cursor: pointer;
 }
 @media (prefers-reduced-motion:reduce){ .crt-overlay{ animation: none; } }
+
+/* Center common containers */
+.wrap,
+.wrap-tight,
+.hero-copy,
+.panel,
+.artist-page section,
+.artist-page .panel {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Ensure they don’t “stick” to the right due to text-align */
+section, .panel { text-align: initial; }
+
+/* Keep your spacing */
+.panel { margin: 40px 20px; }
+
+/* Optional: cap widths so centering is obvious */
+.hero-copy { max-width: 820px; }
+.artist-page section,
+.artist-page .panel { max-width: 900px; }
