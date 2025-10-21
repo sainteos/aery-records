@@ -181,14 +181,58 @@
               this.phi = Math.atan2(dy, dxz);
               this.dragging=false; this.lastX=0; this.lastY=0; this.rotateSpeed=0.005; this.zoomSpeed=0.002;
               this.minPhi=-Math.PI/2+0.05; this.maxPhi=Math.PI/2-0.05;
-              dom.addEventListener('mousedown',e=>{this.dragging=true;this.lastX=e.clientX;this.lastY=e.clientY;});
-              dom.addEventListener('touchstart',e=>{if(e.touches.length===1){this.dragging=true;this.lastX=e.touches[0].clientX;this.lastY=e.touches[0].clientY;}},{passive:false});
-              window.addEventListener('mousemove',e=>{if(!this.dragging)return;const dx=e.clientX-this.lastX,dy=e.clientY-this.lastY;this.lastX=e.clientX;this.lastY=e.clientY;this.theta-=dx*this.rotateSpeed;this.phi-=dy*this.rotateSpeed;this.phi=Math.max(this.minPhi,Math.min(this.maxPhi,this.phi));});
-              window.addEventListener('touchmove',e=>{if(!this.dragging||e.touches.length!==1)return;const t=e.touches[0],dx=t.clientX-this.lastX,dy=t.clientY-this.lastY;this.lastX=t.clientX;this.lastY=t.clientY;this.theta-=dx*this.rotateSpeed;this.phi-=dy*this.rotateSpeed;this.phi=Math.max(this.minPhi,Math.min(this.maxPhi,this.phi));e.preventDefault();},{passive:false});
-              window.addEventListener('mouseup',()=>{this.dragging=false;});
-              window.addEventListener('touchend',()=>{this.dragging=false;});
-              dom.addEventListener('wheel',e=>{const s=Math.exp(e.deltaY*this.zoomSpeed);this.distance=Math.max(this.minDistance,Math.min(this.maxDistance,this.distance*s));e.preventDefault();},{passive:false});
+
+              // elements where we DON'T orbit if the event starts on them
+              const isUI = (el) =>
+                el.closest('header.site, nav, .panel, .card, a, button, input, textarea, select, details, summary, iframe, [data-no-orbit]');
+
+              // mouse
+              window.addEventListener('mousedown', (e) => {
+                if (isUI(e.target)) return;                 // ignore UI
+                this.dragging = true; this.lastX = e.clientX; this.lastY = e.clientY;
+              }, { passive: true });
+
+              window.addEventListener('mousemove', (e) => {
+                if (!this.dragging) return;
+                const dx = e.clientX - this.lastX, dy = e.clientY - this.lastY;
+                this.lastX = e.clientX; this.lastY = e.clientY;
+                this.theta -= dx * this.rotateSpeed;
+                this.phi   -= dy * this.rotateSpeed;
+                this.phi = Math.max(this.minPhi, Math.min(this.maxPhi, this.phi));
+              }, { passive: true });
+
+              window.addEventListener('mouseup', () => { this.dragging = false; }, { passive: true });
+
+              // touch
+              window.addEventListener('touchstart', (e) => {
+                if (e.touches.length !== 1) return;
+                if (isUI(e.target)) return;
+                const t = e.touches[0];
+                this.dragging = true; this.lastX = t.clientX; this.lastY = t.clientY;
+              }, { passive: true });
+
+              window.addEventListener('touchmove', (e) => {
+                if (!this.dragging || e.touches.length !== 1) return;
+                const t = e.touches[0];
+                const dx = t.clientX - this.lastX, dy = t.clientY - this.lastY;
+                this.lastX = t.clientX; this.lastY = t.clientY;
+                this.theta -= dx * this.rotateSpeed;
+                this.phi   -= dy * this.rotateSpeed;
+                this.phi = Math.max(this.minPhi, Math.min(this.maxPhi, this.phi));
+                e.preventDefault();
+              }, { passive: false });
+
+              window.addEventListener('touchend', () => { this.dragging = false; }, { passive: true });
+
+              // wheel zoom
+              window.addEventListener('wheel', (e) => {
+                if (isUI(e.target)) return;                 // let UI scroll normally
+                const s = Math.exp(e.deltaY * this.zoomSpeed);
+                this.distance = Math.max(this.minDistance, Math.min(this.maxDistance, this.distance * s));
+                e.preventDefault();
+              }, { passive: false });
             }
+
             update(dt){
               if(this.autorotate && !this.dragging) this.theta += this.autorotateSpeed*dt;
               const r=this.distance, cp=Math.cos(this.phi), sp=Math.sin(this.phi);
