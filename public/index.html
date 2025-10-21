@@ -16,28 +16,20 @@
           <feDisplacementMap in="SourceGraphic" in2="noise" scale="6" xChannelSelector="R" yChannelSelector="G"/>
         </filter>
       </defs>
-    </svg>
+    </svg>      
+    <header class="site">
+      <div class="wrap row" style="justify-content: space-between;">
+        <div class="brand"><span class="dot"></span> <span>aery records</span></div>
+        <nav>
+          <a href="#releases">releases</a>
+          <a href="#lineup">lineup</a>
+          <a href="#news">news</a>
+          <a href="#about">about</a>
+          <a href="/studio">studio</a>
+        </nav>
+      </div>
+    </header>
     <div id="site-wrap">
-
-      <div class="crt-overlay" aria-hidden="true"></div>
-      <div class="crt-bezel" aria-hidden="true"></div>
-
-      <!-- optional: a tiny toggle -->
-      <button id="crt-toggle" type="button" title="toggle crt">crt</button>
-
-      <header class="site">
-        <div class="wrap row" style="justify-content: space-between;">
-          <div class="brand"><span class="dot"></span> <span>aery records</span></div>
-          <nav>
-            <a href="#releases">releases</a>
-            <a href="#lineup">lineup</a>
-            <a href="#news">news</a>
-            <a href="#about">about</a>
-            <a href="/studio">studio</a>
-          </nav>
-        </div>
-      </header>
-
       <section class="hero">
         <canvas id="stage" aria-hidden="true"></canvas>
         <div class="hero-copy">
@@ -705,5 +697,11 @@
         })();
       </script>
     </div>
+    
+    <div class="crt-overlay" aria-hidden="true"></div>
+    <div class="crt-bezel" aria-hidden="true"></div>
+
+    <!-- optional: a tiny toggle -->
+    <button id="crt-toggle" type="button" title="toggle crt">crt</button>
   </body>
 </html>

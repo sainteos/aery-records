@@ -252,7 +252,7 @@ body.crt-on .crt-bezel { display: block; }
 
 body.crt-on #site-wrap {
   /* gentle warp & punch */
-  filter: url(#crt-warp) contrast(1.06) saturate(1.08);
+  filter: contrast(1.03) saturate(1.05); 
 }
 
 /* scanlines + shadow mask + vignette */
