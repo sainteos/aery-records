@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>aery records — artist</title>
+  <meta name="description" content="aery records — artist page" />
+  <link rel="preconnect" href="https://unpkg.com" />
+  <link rel="stylesheet" href="/css/site.css">
+</head>
+
+<body class="artist-page" data-discog="yoshidas" style="--accent:#b78cff;--accent-2:#7af0ff;--bg1:#ffbaba;--bg2:#abf0ff;">
+  <!-- gentle warp filter -->
+  <svg width="0" height="0" style="position:absolute">
+    <defs>
+      <filter id="crt-warp">
+        <feTurbulence type="fractalNoise" baseFrequency="0.0015" numOctaves="1" seed="8" result="noise"/>
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="6" xChannelSelector="R" yChannelSelector="G"/>
+      </filter>
+    </defs>
+  </svg>
+
+  <header class="site">
+    <div class="wrap row" style="justify-content:space-between;">
+      <div class="brand"><span class="dot"></span><span>aery records</span></div>
+      <nav>
+        <a href="/">home</a>
+        <a href="/#releases">releases</a>
+        <a href="/#lineup">lineup</a>
+        <a href="/#news">news</a>
+        <a href="/#about">about</a>
+        <a href="/studio">studio</a>
+      </nav>
+    </div>
+  </header>
+  <div id="site-wrap"><!-- everything inside gets CRT filter -->
+
+    <!-- HERO / ARTIST NAME -->
+    <section class="hero">
+      <div class="hero-copy">
+        <div class="artist-header">
+          <img class="artist-pic" src="https://picsum.photos/seed/artist/320/320" alt="artist photo" />
+          <div>
+            <h2>yoshi das</h2>
+            <div class="tag">aery records · seattle, wa</div>
+            <div style="height:8px"></div>
+            <div class="links">
+              <div data-socials></div>
+              <a class="pill" href="#releases">discography</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FEATURED MUSIC + BIO -->
+    <section class="panel wrap">
+      <div class="two-col">
+        <div>
+          <div class="kicker">featured</div>
+          <h2>latest release</h2>
+          <!--<iframe class="embed"
+            title="bandcamp — nixie halcyon"
+            src="https://bandcamp.com/EmbeddedPlayer/album=2616033392/size=large/bgcol=ffffff/linkcol=7137dc/tracklist=false/transparent=true/"></iframe>-->
+        </div>
+        <div>
+          <div class="kicker">bio</div>
+          <p>short artist bio goes here — influences, vibe, highlights, collaborators. keep it tight and lowercase for brand cohesion.</p>
+          <p class="muted">for booking/press: <a href="mailto:aeryrecords@example.com">aeryrecords@example.com</a></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- DISCOGRAPHY -->
+    <section class="panel wrap">
+      <div class="kicker" id="releases">releases</div>
+      <h2>discography</h2>
+      <div id="discog" class="discog"></div>
+    </section>
+
+    <!-- CONTACT -->
+    <section class="panel wrap">
+      <div class="kicker">contact</div>
+      <h2>booking / press</h2>
+      <form class="contact-form" action="https://formspree.io/f/xldwqqpo" method="POST">
+        <label>
+          <span>name</span>
+          <input type="text" name="name" placeholder="your name" required />
+        </label>
+        <label>
+          <span>email</span>
+          <input type="email" name="email" placeholder="your@email" required />
+        </label>
+        <label>
+          <span>message</span>
+          <textarea name="message" rows="5" placeholder="dates, venue, details" required></textarea>
+        </label>
+        <div class="actions">
+          <button type="submit">send</button>
+          <span id="status" aria-live="polite"></span>
+        </div>
+        <input type="hidden" name="artist" value="nixie halcyon" />
+        <input type="text" name="_gotcha" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px;opacity:0" aria-hidden="true" />
+      </form>
+    </section>
+
+    <footer class="site">
+      <div>© <span id="year"></span> aery records — all love.</div>
+    </footer>
+  </div><!-- /#site-wrap -->
+
+  <!-- overlays -->
+  <div class="crt-overlay" aria-hidden="true"></div>
+  <div class="crt-bezel"   aria-hidden="true"></div>
+  <button id="crt-toggle" type="button">crt</button>
+
+  <!-- scripts -->
+  <script>
+    // Apply saved CRT state immediately (no flash)
+    (function () {
+      try {
+        if (localStorage.getItem('aery-crt') === 'on') {
+          document.documentElement.classList.add('crt-ready');
+          document.body.classList.add('crt-on');
+        }
+      } catch (_) {}
+    })();
+  </script>
+  <script src="/js/socials.js" defer></script>
+  <script>
+    // header height → body padding (run after header exists)
+    document.addEventListener('DOMContentLoaded', () => {
+      const hdr = document.querySelector('header.site');
+      if (!hdr) return;
+      const set = () => document.documentElement.style.setProperty('--header-h', hdr.offsetHeight + 'px');
+      set();
+      new ResizeObserver(set).observe(hdr);
+      window.addEventListener('resize', set);
+    });
+
+    // year
+    document.addEventListener('DOMContentLoaded',()=>{ const y=document.getElementById('year'); if(y) y.textContent=new Date().getFullYear(); });
+
+    // formspree ajax status
+    (function(){
+      const form=document.querySelector('form.contact-form'); const status=document.getElementById('status');
+      if(!form||!status) return;
+      form.addEventListener('submit',async(e)=>{
+        e.preventDefault(); status.className=''; status.textContent='sending…';
+        try{
+          const res=await fetch(form.action,{method:form.method,body:new FormData(form),headers:{Accept:'application/json'}});
+          if(res.ok){ form.reset(); status.className='ok'; status.textContent='got it — we’ll be in touch ✨'; }
+          else{ status.className='err'; status.textContent='something went wrong'; }
+        }catch(_){ status.className='err'; status.textContent='network hiccup — try again?'; }
+      });
+    })();
+
+    // crt toggle (persist across visits)
+    (function(){
+      const key='aery-crt';
+      if(localStorage.getItem(key)==='on') document.body.classList.add('crt-on');
+      const btn=document.getElementById('crt-toggle');
+      if(!btn) return;
+      const set = () => { btn.textContent = document.body.classList.contains('crt-on') ? 'crt ✓' : 'crt'; };
+      btn.addEventListener('click',()=>{
+        document.body.classList.toggle('crt-on');
+        localStorage.setItem(key, document.body.classList.contains('crt-on')?'on':'off');
+        set();
+      });
+      set();
+    })();
+
+    // === discography loader (auto, robust, with debug chip via ?debug=1) ===
+    document.addEventListener('DOMContentLoaded', async () => {
+      const slot = document.getElementById('discog');
+      if (!slot) return;
+
+      const DEBUG = /[?&]debug=1\b/.test(location.search);
+      let chip;
+      if (DEBUG) {
+        chip = document.createElement('div');
+        Object.assign(chip.style, {
+          position:'fixed', right:'8px', bottom:'8px', zIndex: 99999,
+          background:'rgba(0,0,0,.7)', color:'#fff', padding:'6px 10px',
+          font:'12px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace',
+          borderRadius:'8px'
+        });
+        chip.textContent = 'discog: booting…';
+        document.body.appendChild(chip);
+      }
+
+      // priority: data attribute → filename → fallback
+      const bodySlug = (document.body.dataset.discog || '').trim();
+      const fileSlug = location.pathname.split('/').pop().replace(/\.html$/,'');
+      let slug = (bodySlug || fileSlug || '').toLowerCase();
+      // normalize (strip non-alphanumerics)
+      slug = slug.replace(/[^a-z0-9]/gi, '');
+
+      // build URL (root-relative)
+      const jsonUrl = `/discog/${slug}.json`;
+      if (DEBUG) chip.textContent = `discog: fetching ${jsonUrl}`;
+
+      // fetch JSON
+      let data;
+      try {
+        const res = await fetch(jsonUrl, { cache: 'no-store' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        data = await res.json();
+      } catch (err) {
+        if (DEBUG) chip.textContent = `discog: ${err.message}`;
+        slot.textContent = 'discography unavailable right now';
+        return;
+      }
+
+      const items = Array.isArray(data.items) ? data.items : [];
+      if (DEBUG) chip.textContent = `discog: ${items.length} items`;
+
+      slot.classList.add('discog'); // ensure grid
+      if (!items.length) {
+        slot.innerHTML = '<div class="muted">no releases found yet</div>';
+        return;
+      }
+      const frag = document.createDocumentFragment();
+
+      for (const it of items) {
+        const canEmbedAlbum = it.album && /^\d+$/.test(it.album);
+        const canEmbedTrack = it.track && /^\d+$/.test(it.track);
+
+        if (canEmbedAlbum || canEmbedTrack) {
+          // ➜ EMBED-ONLY CARD
+          const card = document.createElement('div');
+          card.className = 'release';
+
+          const iframe = document.createElement('iframe');
+          iframe.className = 'embed';
+          iframe.loading = 'lazy';
+          iframe.allow = 'autoplay; encrypted-media';
+          iframe.title = `bandcamp: ${it.title || ''}`;
+          iframe.src = canEmbedAlbum
+            ? `https://bandcamp.com/EmbeddedPlayer/album=${it.album}/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=false/transparent=true/`
+            : `https://bandcamp.com/EmbeddedPlayer/track=${it.track}/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=false/transparent=true/`;
+          card.appendChild(iframe);
+
+          // small caption link (optional)
+          const title = document.createElement('div');
+          title.innerHTML = `<b><a href="${it.url || '#'}" target="_blank" rel="noopener">${it.title || 'untitled'}</a></b>`;
+          card.appendChild(title);
+
+          frag.appendChild(card);
+        } else {
+          // ➜ FALLBACK: ARTWORK + LINK ONLY (no embed available)
+          const card = document.createElement('a');
+          card.className = 'release';
+          card.href = it.url || '#';
+          card.target = '_blank';
+          card.rel = 'noopener';
+
+          if (it.art) {
+            const img = document.createElement('img');
+            img.src = it.art;
+            img.alt = it.title || 'artwork';
+            card.appendChild(img);
+          }
+
+          const title = document.createElement('div');
+          title.innerHTML = `<b>${it.title || 'untitled'}</b>`;
+          card.appendChild(title);
+
+          frag.appendChild(card);
+        }
+      }
+
+      slot.textContent = '';
+      slot.appendChild(frag);
+    });
+  </script>
+  <div class="crt-overlay" aria-hidden="true"></div>
+  <div class="crt-bezel" aria-hidden="true"></div>
+  <button id="crt-toggle" type="button" title="toggle crt">crt</button>
+  <script>
+    (function(){
+      const key='aery-crt';
+      if(localStorage.getItem(key)==='on') document.body.classList.add('crt-on');
+      const btn=document.getElementById('crt-toggle');
+      if(!btn) return;
+      const set=()=>{btn.textContent=document.body.classList.contains('crt-on')?'crt ✓':'crt';};
+      btn.addEventListener('click',()=>{
+        document.body.classList.toggle('crt-on');
+        localStorage.setItem(key, document.body.classList.contains('crt-on')?'on':'off');
+        set();
+      });
+      set();
+    })();
+  </script>
+</body>
+</html>
