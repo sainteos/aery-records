@@ -1,0 +1,77 @@
+/* =======================================================
+   artist-specific themes for aery records
+   ======================================================= */
+
+/* shared baseline for all artist pages */
+body.artist-page {
+  background-attachment: scroll;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  min-height: 100%;
+  text-transform: lowercase;
+}
+
+/* ---------------- nixie halcyon ---------------- */
+body.artist-page[data-artist="nixiehalcyon"] {
+  --accent: #b78cff;
+  --accent-2: #7af0ff;
+  --accent-3: #ffd36e;
+  --bg1: #fbe9ff;
+  --bg2: #d6c3ff;
+  --bg3: #b8e6ff;
+  --bg4: #a5ffd9;
+  --bg5: #f7d9ff;
+
+  background: linear-gradient(
+    180deg,
+    var(--bg1) 0%,
+    var(--bg2) 20%,
+    var(--bg3) 45%,
+    var(--bg4) 70%,
+    var(--bg5) 100%
+  );
+}
+
+/* ---------------- partyboob420 ---------------- */
+body.artist-page[data-artist="partyboob420"] {
+  --accent: #ff7ab6;
+  --accent-2: #ffd36e;
+  --accent-3: #7af0e0;
+  --bg1: #ffe7f3;
+  --bg2: #ffc4e0;
+  --bg3: #fef7a6;
+  --bg4: #a0eaff;
+  --bg5: #ffb1fc;
+
+  background: linear-gradient(
+    180deg,
+    var(--bg1) 0%,
+    var(--bg2) 25%,
+    var(--bg3) 50%,
+    var(--bg4) 75%,
+    var(--bg5) 100%
+  );
+}
+
+/* ---------------- yoshi das ---------------- */
+body.artist-page[data-artist="yoshidas"] {
+  --accent: #6df7c1;
+  --accent-2: #8d7aff;
+  --accent-3: #ffbc6e;
+  --bg1: #ffbaba;
+  --bg2: #abf0ff;
+  --bg3: #ffd2ba;
+  --bg4: #ffabea;
+  --bg5: #ccbaff;
+  --bg6: #abf0ff;
+
+  background: linear-gradient(
+    180deg,
+    var(--bg1) 0%,
+    var(--bg2) 20%,
+    var(--bg3) 40%,
+    var(--bg4) 60%,
+    var(--bg5) 80%,
+    var(--bg6) 100%
+  );
+}
