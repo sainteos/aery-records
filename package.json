@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "",
+    "build": "npm run discog:all && npm run build:galleries",
+    "build:galleries": "node scripts/generate-galleries.js",
     "discog": "node scripts/scrape-bandcamp.js nixiehalcyon",
     "discog:nixiehalcyon": "node scripts/scrape-bandcamp.js nixiehalcyon",
     "discog:partyboob420": "node scripts/scrape-bandcamp.js partyboob420",

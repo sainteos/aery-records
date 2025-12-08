@@ -67,7 +67,19 @@
         <div>
           <div class="kicker">bio</div>
           <p>short artist bio goes here — influences, vibe, highlights, collaborators. keep it tight and lowercase for brand cohesion.</p>
-          <p class="muted">for booking/press: <a href="mailto:aeryrecords@example.com">aeryrecords@example.com</a></p>
+          <p class="muted">for booking/press: <a href="mailto:booking@aeryrecords.com">booking@aeryrecords.com</a></p>
+        </div>
+      </div>
+    </section>
+    <section class="panel wrap">
+      <div class="kicker">gallery</div>
+      <h2>photos</h2>
+      <div class="artist-gallery" data-gallery="yoshidas">
+        <div class="artist-gallery-frame"></div>
+        <div class="artist-gallery-nav">
+          <button type="button" data-prev>prev</button>
+          <span class="artist-gallery-dots" aria-hidden="true"></span>
+          <button type="button" data-next>next</button>
         </div>
       </div>
     </section>
@@ -128,6 +140,7 @@
     })();
   </script>
   <script src="/js/socials.js" defer></script>
+  <script src="/js/gallery.js" defer></script>
   <script>
     // header height → body padding (run after header exists)
     document.addEventListener('DOMContentLoaded', () => {

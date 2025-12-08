@@ -427,3 +427,64 @@ body:not(.artist-page) .hero-copy {
   text-align: center;
   white-space: nowrap;
 }
+
+/* === artist gallery / slideshow === */
+
+.artist-gallery {
+  margin-top: 1.5rem;
+}
+
+/* the viewport for slides */
+.artist-gallery-frame {
+  position: relative;
+  max-width: 720px;
+  margin: 0 auto;
+  overflow: hidden;
+  /* no background, no border, no shadow = no white rectangle */
+  background: none;
+  border: none;
+  box-shadow: none;
+}
+
+/* each slide image */
+.artist-gallery-slide {
+  display: none;        /* hidden by default */
+  width: 100%;
+  height: auto;
+  display: none;
+}
+
+/* visible slide */
+.artist-gallery-slide.is-active {
+  display: block;
+}
+
+/* nav row */
+.artist-gallery-nav {
+  margin-top: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+/* dots row */
+.artist-gallery-dots {
+  display: flex;
+  gap: 6px;
+}
+
+/* individual dot */
+.artist-gallery-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  border: 0;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+}
+
+.artist-gallery-dot.is-active {
+  background: var(--accent, #ff7ab6);
+}
