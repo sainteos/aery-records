@@ -17,9 +17,9 @@ jobs:
     steps:
     # The checkout step copies your repo into the action runner. Important!
     - uses: actions/checkout@v4
-    with:
-      fetch-depth: 0
-      lfs: true
+      with:
+        fetch-depth: 0
+        lfs: true
     # Set up any tools and build steps here
     # This example uses a Node.js toolchain to build a site
     # If you don't need Node.js to build your site, you can omit this.
