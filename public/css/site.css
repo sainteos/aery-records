@@ -85,7 +85,7 @@ a.navlink{ color:var(--ink); text-decoration:none; font-weight:600; opacity:.9; 
 a.navlink:hover{ opacity:1; text-decoration:underline; }
 
 /* ---------- Hero ---------- */
-.hero{ position:relative; min-height:70vh; display:grid; place-items:center; padding:48px 20px 24px; }
+.hero{ position:relative; min-height:50vh; display:grid; place-items:center; padding:48px 20px 24px; }
 .hero-copy{
   position:relative; z-index:2; text-align:center; max-width:820px;
   background:linear-gradient(180deg,var(--glassA),var(--glassB));
