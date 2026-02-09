@@ -8,7 +8,7 @@ body.artist-page {
   background-repeat: no-repeat;
   background-size: 100% 100%;
   min-height: 100%;
-  text-transform: lowercase;
+  /*text-transform: lowercase;*/
 }
 
 /* ---------------- nixie halcyon ---------------- */

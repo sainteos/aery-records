@@ -55,7 +55,7 @@ body{
     "Segoe UI",
     sans-serif;
   background:linear-gradient(180deg,var(--bg1),var(--bg2)) fixed;
-  text-transform:lowercase;
+  /*text-transform:lowercase;*/
   overflow-x:hidden;
   padding-top: var(--header-h, 64px);
 }
