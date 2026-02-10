@@ -98,8 +98,8 @@ header.site{
 }
 
 .brand-logo{
-  height: 60px;     /* smaller */
-  max-height: 60px; /* hard cap */
+  height: 100px;     /* smaller */
+  max-height: 100px; /* hard cap */
   width: auto;
   display: block;
   border-radius: 10px;
@@ -136,6 +136,20 @@ a.navlink:hover{ opacity:1; text-decoration:underline; }
   padding:24px 22px;
   box-shadow:0 20px 40px rgba(0,0,0,.08);
 }
+.hero-logo-wrap {
+  display: inline-block;
+  border-radius: 18px;
+  overflow: hidden; /* this clips the image */
+  box-shadow: 0 20px 40px rgba(0,0,0,.08);
+}
+
+.hero-logo {
+  height: 480px;
+  max-height: 480px;
+  width: auto;
+  display: block;
+}
+
 h1{ margin:0 0 6px; font-size:clamp(28px,5vw,56px); line-height:1.02; }
 .tag{ color:var(--ink-muted); }
 
