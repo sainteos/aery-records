@@ -245,9 +245,26 @@ footer.site{ color:var(--ink-muted); text-align:center; padding:56px 10px 40px; 
   text-align: center;
   margin-bottom: 2rem;
 }
-.artist-header{ display:grid; grid-template-columns:120px 1fr; gap:16px; align-items:center; }
-.artist-pic{ width:120px; height:120px; border-radius:18px; object-fit:cover; box-shadow:0 10px 20px rgba(0,0,0,.08); border:1px solid var(--glass-stroke); }
-@media (max-width:600px){ .artist-header{ grid-template-columns:1fr; } .artist-pic{ justify-self:center; } }
+.artist-header {
+  display: grid;
+  grid-template-columns: minmax(220px, 300px) 1fr;
+  gap: 24px;
+  align-items: center;
+}
+
+.artist-pic {
+  width: 100%;
+  max-width: 300px;
+  aspect-ratio: 1 / 1;
+  border-radius: 24px;
+  object-fit: cover;
+  box-shadow: 0 16px 36px rgba(0,0,0,.14);
+  border: 1px solid var(--glass-stroke);
+}
+@media (max-width:600px){
+  .artist-header{ grid-template-columns:1fr; }
+  .artist-pic{ justify-self:center; width:150px; height:150px; }
+}
 .two-col{ display:grid; grid-template-columns:1.1fr .9fr; gap:18px; }
 @media (max-width:900px){ .two-col{ grid-template-columns:1fr; } }
 .discog{ display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; }
@@ -353,9 +370,6 @@ body.crt-on #site-wrap {
   margin-left: auto;
   margin-right: auto;
 }
-
-/* Ensure they don’t “stick” to the right due to text-align */
-section, .panel { text-align: initial; }
 
 /* Keep your spacing */
 .panel { margin: 40px 20px; }
