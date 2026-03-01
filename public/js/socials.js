@@ -4,6 +4,7 @@
   <defs>
     <symbol id="ic-bandcamp" viewBox="0 0 24 24" fill="currentColor"><path d="M9.2 5h9.3L14.8 19H5.5L9.2 5z"/></symbol>
     <symbol id="ic-instagram" viewBox="0 0 24 24" fill="currentColor"><path d="M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5zm0 2a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3H7zm5 3.5a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11zm0 2a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7zm5.75-2.25a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5z"/></symbol>
+    <symbol id="ic-facebook" viewBox="0 0 24 24" fill="currentColor"><path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.879V14.89h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.542V12h2.773l-.443 2.89h-2.33v6.989C18.343 21.128 22 16.991 22 12z"/></symbol>
     <symbol id="ic-x" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3h3.7l5.1 6.9L17.9 3H21l-7.3 9.4L21 21h-3.7l-5.4-7.3L6.1 21H3l7.8-10.1L3 3z"/></symbol>
     <symbol id="ic-youtube" viewBox="0 0 24 24" fill="currentColor"><path d="M23.5 7.5a4 4 0 0 0-2.8-2.8C18.9 4 12 4 12 4s-6.9 0-8.7.7A4 4 0 0 0 .5 7.5 41.7 41.7 0 0 0 0 12a41.7 41.7 0 0 0 .5 4.5 4 4 0 0 0 2.8 2.8C5.1 20 12 20 12 20s6.9 0 8.7-.7a4 4 0 0 0 2.8-2.8c.4-1.5.5-3 .5-4.5s0-3-.5-4.5zM9.8 15.5V8.5L15.8 12l-6 3.5z"/></symbol>
     <symbol id="ic-soundcloud" viewBox="0 0 24 24" fill="currentColor"><path d="M12.5 7a5 5 0 0 1 4.7 3.1 3.5 3.5 0 1 1 1.8 6.5H8.3A3.3 3.3 0 0 1 5 13.3c0-1.7 1.3-3.1 3-3.3A5 5 0 0 1 12.5 7z"/></symbol>
@@ -15,12 +16,12 @@
 </svg>`;
 
   const ICON_MAP = {
-    bandcamp:'ic-bandcamp', instagram:'ic-instagram', x:'ic-x',
+    bandcamp:'ic-bandcamp', instagram:'ic-instagram', facebook:'ic-facebook', x:'ic-x',
     youtube:'ic-youtube', soundcloud:'ic-soundcloud', spotify:'ic-spotify',
     link:'ic-link', email:'ic-mail', tiktok:'ic-tiktok'
   };
   const CLASS_MAP = {
-    bandcamp:'bc', instagram:'ig', x:'x', youtube:'yt', soundcloud:'sc',
+    bandcamp:'bc', instagram:'ig', facebook: 'fb', x:'x', youtube:'yt', soundcloud:'sc',
     spotify:'sp', link:'lk', email:'mail', tiktok:'tt'
   };
   const KEYS = Object.keys(ICON_MAP);
