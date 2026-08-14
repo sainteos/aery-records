@@ -11,7 +11,8 @@
     "discog": "node scripts/scrape-bandcamp.js nixiehalcyon",
     "discog:nixiehalcyon": "node scripts/scrape-bandcamp.js nixiehalcyon",
     "discog:partyboob420": "node scripts/scrape-bandcamp.js partyboob420",
-    "discog:all": "npm run discog:nixiehalcyon && npm run discog:partyboob420"
+    "discog:yoshi-das": "node scripts/scrape-bandcamp.js yoshi-das",
+    "discog:all": "npm run discog:nixiehalcyon && npm run discog:partyboob420 && npm run discog:yoshi-das"
   },
   "repository": {
     "type": "git",
