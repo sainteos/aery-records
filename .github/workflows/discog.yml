@@ -13,7 +13,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        artist: [ "nixiehalcyon", "partyboob420", "yoshidas" ]
+        artist: [ "nixiehalcyon", "partyboob420", "yoshi-das" ]
     permissions:
       contents: write
 
