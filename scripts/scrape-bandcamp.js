@@ -285,7 +285,7 @@ async function main() {
   await fs.mkdir(outDir, { recursive: true });
 
   const payload = await scrapeArtist(slug);
-  const outFile = path.join(outDir, `${slug}.json`);
+  const outFile = path.join(outDir, `${slug.replace(/[^a-z0-9]/gi, '')}.json`);
   await fs.writeFile(outFile, JSON.stringify(payload, null, 2));
   console.log(`wrote ${outFile} items: ${payload.items.length}`);
 }
