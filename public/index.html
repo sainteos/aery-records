@@ -94,25 +94,8 @@
       <section id="releases" class="panel wrap-tight">
         <div class="kicker">releases</div>
         <h2>out now / forthcoming</h2>
-        <div class="releases">
-          <div class="release">
-            <img src="https://picsum.photos/seed/aery2/640/640" alt="release art" />
-            <div><b>yoshi das - revolution: the battle cry EP</b></div>
-            <div class="meta">aery-006 · ep · digital</div>
-            <iframe class="embed" src="https://bandcamp.com/EmbeddedPlayer/album=0000000000/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=false/transparent=true/" title="bandcamp embed — aery-002" loading="lazy"></iframe>
-          </div>
-          <div class="release">
-            <img src="https://picsum.photos/seed/aery1/640/640" alt="release art" />
-            <div><b>nixie halcyon - beats to get scrungly to vol. 1: light</b></div>
-            <div class="meta">aery-007 · beat tape · digital</div>
-            <iframe class="embed" src="https://bandcamp.com/EmbeddedPlayer/album=0000000000/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=false/transparent=true/" title="bandcamp embed — aery-001" loading="lazy"></iframe>
-          </div>
-          <div class="release">
-            <img src="https://picsum.photos/seed/aery3/640/640" alt="release art" />
-            <div><b>morgan fiskevold — purple flowers</b></div>
-            <div class="meta">aery-008 · single · digital</div>
-            <iframe class="embed" src="https://bandcamp.com/EmbeddedPlayer/album=0000000000/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=false/transparent=true/" title="bandcamp embed — aery-003" loading="lazy"></iframe>
-          </div>
+        <div class="releases" id="releases-grid">
+          <div class="muted">loading releases…</div>
         </div>
       </section>
 
@@ -277,6 +260,99 @@
             pool.forEach(el => container.appendChild(el));
           })();
         </script>
+
+        <!-- homepage discography aggregator (reads catalog.json) -->
+        <script>
+          document.addEventListener('DOMContentLoaded', async () => {
+            const grid = document.getElementById('releases-grid');
+            if (!grid) return;
+
+            let data;
+            try {
+              const res = await fetch('/discog/catalog.json', { cache: 'no-store' });
+              if (!res.ok) throw new Error(`HTTP ${res.status}`);
+              data = await res.json();
+            } catch (err) {
+              grid.innerHTML = '<div class="muted">releases unavailable right now</div>';
+              return;
+            }
+
+            let allItems = Array.isArray(data.items) ? data.items : [];
+            if (!allItems.length) {
+              grid.innerHTML = '<div class="muted">no releases found yet</div>';
+              return;
+            }
+
+            // newest first (stable — items without a releaseDate keep their
+            // relative order rather than jumping to the top)
+            allItems = allItems
+              .map((it, i) => ({ it, i }))
+              .sort((a, b) => {
+                const da = a.it.releaseDate ? new Date(a.it.releaseDate).getTime() : NaN;
+                const db = b.it.releaseDate ? new Date(b.it.releaseDate).getTime() : NaN;
+                if (!isNaN(da) && !isNaN(db)) return db - da;
+                if (!isNaN(da)) return -1;
+                if (!isNaN(db)) return 1;
+
+                // no usable dates — fall back to catalog number (monotonic,
+                // never reassigned, so a reliable proxy for recency)
+                const cm = /^aery-(\d+)$/;
+                const ca = a.it.catalogNo && cm.test(a.it.catalogNo) ? parseInt(a.it.catalogNo.match(cm)[1], 10) : NaN;
+                const cb = b.it.catalogNo && cm.test(b.it.catalogNo) ? parseInt(b.it.catalogNo.match(cm)[1], 10) : NaN;
+                if (!isNaN(ca) && !isNaN(cb)) return cb - ca;
+                if (!isNaN(ca)) return -1;
+                if (!isNaN(cb)) return 1;
+
+                return b.i - a.i;
+              })
+              .map(({ it }) => it)
+              .slice(0, 3);
+
+            grid.innerHTML = '';
+            const frag = document.createDocumentFragment();
+
+            for (const it of allItems) {
+              const card = document.createElement('div');
+              card.className = 'release';
+
+              const label = document.createElement('div');
+              label.innerHTML = `<b>${it.artist || ''} - ${it.title || 'untitled'}</b>`;
+              card.appendChild(label);
+
+              const meta = document.createElement('div');
+              meta.className = 'meta';
+              meta.textContent = [it.catalogNo, it.format].filter(Boolean).join(' · ');
+              if (meta.textContent) card.appendChild(meta);
+
+              const canEmbedAlbum = it.album && /^\d+$/.test(it.album);
+              const canEmbedTrack = it.track && /^\d+$/.test(it.track);
+              if (canEmbedAlbum || canEmbedTrack) {
+                const iframe = document.createElement('iframe');
+                iframe.className = 'embed embed-full';
+                iframe.loading = 'lazy';
+                iframe.title = `bandcamp embed — ${it.title || ''}`;
+                // full-size player: square art + visible play button + buy link,
+                // not the cropped "large" size used elsewhere on the page
+                iframe.src = canEmbedAlbum
+                  ? `https://bandcamp.com/EmbeddedPlayer/album=${it.album}/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=false/transparent=true/`
+                  : `https://bandcamp.com/EmbeddedPlayer/track=${it.track}/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=false/transparent=true/`;
+                card.appendChild(iframe);
+              } else if (it.url) {
+                const link = document.createElement('a');
+                link.href = it.url;
+                link.target = '_blank';
+                link.rel = 'noopener';
+                link.textContent = 'listen on bandcamp';
+                card.appendChild(link);
+              }
+
+              frag.appendChild(card);
+            }
+
+            grid.appendChild(frag);
+          });
+        </script>
+
         <script>
           (function(){
             // if you already have the basic CRT toggle, this just adds a "strong" toggle via Shift+Click

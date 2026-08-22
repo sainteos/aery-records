@@ -61,9 +61,46 @@ jobs:
             }
           fi
 
-  # 2) deploy once after all artists have been processed
-  deploy:
+  # 2) merge into catalog.json (after all artists scraped)
+  catalog:
     needs: discog
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install deps
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Pull latest main
+        run: git pull origin main
+      - name: Update catalog.json
+        run: node scripts/update-catalog.js
+      - name: Commit & push catalog.json
+        run: |
+          set -e
+          git config user.name "aery bot"
+          git config user.email "bot@aeryrecords.com"
+          git add public/discog/catalog.json
+          if git diff --cached --quiet; then
+            echo "No catalog changes"
+          else
+            git commit -m "catalog: sync $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+            git fetch origin main
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
+
+  # 4) deploy once after all artists have been processed
+  deploy:
+    needs: catalog
     runs-on: ubuntu-latest
     permissions:
       contents: read

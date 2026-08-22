@@ -183,7 +183,7 @@ h2{ margin:6px 0 14px; font-size:clamp(22px,3vw,34px); }
 .artist{ background:rgba(255,255,255,.65); border:1px solid var(--glass-stroke); border-radius:18px; padding:14px; }
 .artist .name{ font-weight:700; margin-bottom:6px; }
 
-.releases{ display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:18px; }
+.releases{ display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:18px; align-items:start; }
 .release{
   background:rgba(255,255,255,.9);
   border:1px solid var(--glass-stroke);
@@ -206,6 +206,15 @@ h2{ margin:6px 0 14px; font-size:clamp(22px,3vw,34px); }
   display: block;
   margin: 0 auto;
   background: #eee;
+}
+
+/* Full-frame bandcamp embed (size=large: 350x470 — square art + play/buy strip).
+   Overrides the wide 1.4:1 shape above so the control strip isn't cropped. */
+.embed-full{
+  aspect-ratio: 350 / 470;
+  width: 100%;
+  max-width: 350px;
+  height: auto;
 }
 
 /* ---------- Buttons / Pills ---------- */

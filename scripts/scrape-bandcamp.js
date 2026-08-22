@@ -1,6 +1,6 @@
 // scripts/scrape-bandcamp.js
 // usage: node scripts/scrape-bandcamp.js <artist-slug>
-// writes: public/discog/<slug>.json
+// writes: public/discog/<sanitized-slug>.json
 
 import fs from 'fs/promises';
 import path from 'path';
@@ -42,35 +42,51 @@ const findNum = (re, text) => {
 const parseJSONSafe = (s) => { try { return JSON.parse(s); } catch { return null; } };
 
 /**
- * Try multiple sources to extract item_type (album|track), ids, and album membership.
+ * Try multiple sources to extract item_type (album|track), ids, album membership,
+ * and release date.
  * Priority order:
  *  1) <script id="pagedata" data-blob='...'> (or its innerText JSON)
  *  2) <meta name="bc-page-properties" content='...'>
  *  3) <meta name="twitter:player" content='...EmbeddedPlayer/...'>
- *  4) TralbumData = {...}
+ *  4) TralbumData = {...}  (also our source for release date)
  *  5) Any EmbeddedPlayer in raw HTML
  *
- * Returns { type?: 'album'|'track', albumId?: string, trackId?: string, belongsToAlbum: boolean }
+ * Returns { type?, albumId?, trackId?, belongsToAlbum, releaseDate? }
  */
 function extractIdsAndType(html, $) {
   let type;           // 'album' | 'track'
   let albumId;        // numeric string
   let trackId;        // numeric string
   let belongsToAlbum = false;
+  let releaseDate;    // ISO string
+
+  // 0) JSON-LD (schema.org) — most reliable, standardized date source.
+  //    Bandcamp emits <script type="application/ld+json"> with datePublished
+  //    on most album/track pages, independent of the TralbumData internals.
+  $('script[type="application/ld+json"]').each((_, el) => {
+    if (releaseDate) return; // already found
+    const raw = $(el).contents().text();
+    const obj = parseJSONSafe(raw);
+    if (!obj) return;
+    const candidates = Array.isArray(obj) ? obj : [obj];
+    for (const c of candidates) {
+      const dp = c?.datePublished || c?.dateCreated;
+      if (dp) {
+        const d = new Date(dp);
+        if (!isNaN(d.getTime())) { releaseDate = d.toISOString(); break; }
+      }
+    }
+  });
 
   // 1) pagedata blob
-  //    <script id="pagedata" data-blob="&quot;{...}&quot;"></script>
-  // or <script id="pagedata">{...}</script>
   const pdEl = $('#pagedata');
   if (pdEl.length) {
     let blob = pdEl.attr('data-blob');
     if (blob) {
-      // decode HTML entities occasionally present
       blob = blob.replace(/&quot;/g, '"').replace(/&amp;/g, '&');
       const props = parseJSONSafe(blob);
       if (props && typeof props === 'object') {
         type = props.item_type || type;
-        // item_id is the current page's id (album or track)
         if (props.item_type === 'album' && /^\d+$/.test(String(props.item_id))) {
           albumId = String(props.item_id);
         }
@@ -148,8 +164,10 @@ function extractIdsAndType(html, $) {
     }
   }
 
-  // 4) TralbumData (VM sandbox)
-  if (!albumId && !trackId) {
+  // 4) TralbumData (VM sandbox) — also our source for release date.
+  //    Runs regardless of whether IDs were already found above, since we
+  //    still want the date.
+  {
     const m = html.match(/TralbumData\s*=\s*({[\s\S]*?});/);
     if (m) {
       try {
@@ -157,24 +175,37 @@ function extractIdsAndType(html, $) {
         vm.createContext(context);
         const script = new vm.Script(`TralbumData = ${m[1]}; TralbumData;`);
         const data = script.runInContext(context, { timeout: 50 });
-        const typ = String(data?.current?.type || '').toLowerCase();
-        const id  = data?.current?.id ?? data?.id;
 
-        if (id && /^\d+$/.test(String(id))) {
-          if (typ === 'album') albumId = String(id);
-          else if (typ === 'track') trackId = String(id);
-          else albumId = String(id);
+        if (!albumId && !trackId) {
+          const typ = String(data?.current?.type || '').toLowerCase();
+          const id  = data?.current?.id ?? data?.id;
+
+          if (id && /^\d+$/.test(String(id))) {
+            if (typ === 'album') albumId = String(id);
+            else if (typ === 'track') trackId = String(id);
+            else albumId = String(id);
+          }
+          if (!albumId) {
+            const aid = data?.album_id ?? data?.current?.album_id;
+            if (aid && /^\d+$/.test(String(aid))) albumId = String(aid);
+          }
+          if (!trackId) {
+            const tid = data?.track_id ?? data?.current?.track_id;
+            if (tid && /^\d+$/.test(String(tid))) trackId = String(tid);
+          }
+          if (!belongsToAlbum && typ === 'track' && (data?.album_id || data?.current?.album_id)) {
+            belongsToAlbum = true;
+          }
         }
-        if (!albumId) {
-          const aid = data?.album_id ?? data?.current?.album_id;
-          if (aid && /^\d+$/.test(String(aid))) albumId = String(aid);
-        }
-        if (!trackId) {
-          const tid = data?.track_id ?? data?.current?.track_id;
-          if (tid && /^\d+$/.test(String(tid))) trackId = String(tid);
-        }
-        if (!belongsToAlbum && (typ === 'track') && (data?.album_id || data?.current?.album_id)) {
-          belongsToAlbum = true;
+
+        const rawDate =
+          data?.current?.release_date ||
+          data?.album_release_date ||
+          data?.current?.album_release_date ||
+          data?.current?.publish_date;
+        if (!releaseDate && rawDate) {
+          const d = new Date(rawDate);
+          if (!isNaN(d.getTime())) releaseDate = d.toISOString();
         }
       } catch {}
     }
@@ -203,7 +234,7 @@ function extractIdsAndType(html, $) {
     else if (/\/track\//.test(canon)) type = 'track';
   }
 
-  return { type, albumId, trackId, belongsToAlbum };
+  return { type, albumId, trackId, belongsToAlbum, releaseDate };
 }
 
 async function scrapeArtist(slug) {
@@ -239,7 +270,7 @@ async function scrapeArtist(slug) {
         try { if (new URL(og).hostname !== `${slug}.bandcamp.com`) continue; } catch {}
       }
 
-      const { type, albumId, trackId, belongsToAlbum } = extractIdsAndType(page, $$);
+      const { type, albumId, trackId, belongsToAlbum, releaseDate } = extractIdsAndType(page, $$);
       const isTrackPage = /\/track\//.test(new URL(url).pathname);
       const title = extractTitle($$) || 'untitled';
       const art   = extractArt($$);
@@ -250,8 +281,9 @@ async function scrapeArtist(slug) {
         continue;
       }
 
-      const item = { title, url, art, album: albumId || '' };
+      const item = { title, url, art, album: albumId || '', releaseDate: releaseDate || '' };
       if (!albumId && trackId) item.track = trackId; // true singles only
+      if (!releaseDate) console.warn('no release date found:', url);
       raw.push(item);
 
       await sleep(220);
@@ -285,7 +317,11 @@ async function main() {
   await fs.mkdir(outDir, { recursive: true });
 
   const payload = await scrapeArtist(slug);
-  const outFile = path.join(outDir, `${slug.replace(/[^a-z0-9]/gi, '')}.json`);
+
+  // sanitize the OUTPUT filename only — the Bandcamp fetch above still uses
+  // the raw slug (e.g. "yoshi-das"), since that's the real subdomain
+  const outSlug = slug.replace(/[^a-z0-9]/gi, '');
+  const outFile = path.join(outDir, `${outSlug}.json`);
   await fs.writeFile(outFile, JSON.stringify(payload, null, 2));
   console.log(`wrote ${outFile} items: ${payload.items.length}`);
 }
